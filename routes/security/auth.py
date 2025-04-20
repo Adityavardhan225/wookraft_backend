@@ -11,10 +11,11 @@ from decouple import config
 
 
 # Secret key to encode and decode JWT tokens
-SECRET_KEY = config('JWT_SECRET')
-ALGORITHM =  config('JWT_ALGORITHM')
-ACCESS_TOKEN_EXPIRE_MINUTES = 56700
+from configurations.config import settings 
 
+JWT_SECRET = settings.JWT_SECRET
+JWT_ALGORITHM = settings.JWT_ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 class Token(BaseModel):
