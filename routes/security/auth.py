@@ -32,7 +32,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM )
     return encoded_jwt
 
 def get_current_user_verify(token: str = Depends(oauth2_scheme), db: Database = Depends(get_db)):
@@ -42,7 +42,7 @@ def get_current_user_verify(token: str = Depends(oauth2_scheme), db: Database = 
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM ])
         user_id: str = payload.get("user_id")
         if user_id is None:
             raise credentials_exception
