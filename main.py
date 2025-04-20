@@ -27,7 +27,7 @@ from routes.campaign.sending_campaign.routes import email_campaign_routes
 from routes.campaign.sending_campaign.routes import email_template_routes
 
 
-load_dotenv()
+
 
 app = FastAPI()
 origins = ["*"]
