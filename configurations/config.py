@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     SMTP_USERNAME: str
     SMTP_PASSWORD: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
+
+        # Cloudinary Configuration
+    CLOUDINARY_CLOUD_NAME: str
+    CLOUDINARY_API_KEY: str
+    CLOUDINARY_API_SECRET: str
+    
     BASE_URL: str = os.getenv("FEEDBACK_BASE_URL", "http://localhost:8000")
 
     class Config:
