@@ -1,0 +1,107 @@
+services:
+  # Web Service for FastAPI
+  - name: woopos-web
+    type: web
+    env: python
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 8000
+    envVars:
+      # SMTP Configuration
+      - key: SMTP_SERVER
+        value: 'smtp.gmail.com'
+      - key: SMTP_PORT
+        value: '587'
+      - key: SMTP_USERNAME
+        value: 'wookraft.aya@gmail.com'
+      - key: SMTP_PASSWORD
+        value: 'zfctwgpgwqzilpgg'
+      - key: FROM_EMAIL
+        value: 'wookraft.aya@gmail.com'
+      
+
+      # Redis Configuration
+      - key: REDIS_URL
+        fromDatabase:
+          name: woopos-redis
+          property: connection_string
+
+      # Cloudinary Configuration
+      - key: CLOUDINARY_CLOUD_NAME
+        value: 'dl91gwshv'
+      - key: CLOUDINARY_API_KEY
+        value: '392761399558392'
+      - key: CLOUDINARY_API_SECRET
+        value: 'N8dW3ksMCt41qCfzFeobTh701hM'
+
+      # JWT Configuration
+      - key: JWT_SECRET_KEY
+        value: 789jflksbas2343kjdfk45454jfskdl4332342nkndvfxsf
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "57600"
+
+      # API Base URL
+      - key: API_BASE_URL
+        value: https://your-app.onrender.com
+
+      # MongoDB Configuration
+      - key: MONGO_URI
+        value: 'mongodb+srv://adityavardhan225:Aditya225@test.ukco3.mongodb.net/?retryWrites=true&w=majority&appName=test'
+
+  # Background Worker for Celery
+  - name: woopos-worker
+    type: worker
+    env: python
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A routes.campaign.sending_campaign.services.celery_app worker --loglevel=info
+    envVars:
+      - key: REDIS_URL
+        fromDatabase:
+          name: woopos-redis
+          property: connection_string
+
+      # SMTP Configuration
+      - key: SMTP_SERVER
+        value: 'smtp.gmail.com'
+      - key: SMTP_PORT
+        value: '587'
+      - key: SMTP_USERNAME
+        value: 'wookraft.aya@gmail.com'
+      - key: SMTP_PASSWORD
+        value: 'zfctwgpgwqzilpgg'
+      - key: FROM_EMAIL
+        value: 'wookraft.aya@gmail.com'
+
+      # Cloudinary Configuration
+      - key: CLOUDINARY_CLOUD_NAME
+        value: 'dl91gwshv'
+      - key: CLOUDINARY_API_KEY
+        value: '392761399558392'
+      - key: CLOUDINARY_API_SECRET
+        value: 'N8dW3ksMCt41qCfzFeobTh701hM'
+
+      # JWT Configuration
+      - key: JWT_SECRET_KEY
+        value: 789jflksbas2343kjdfk45454jfskdl4332342nkndvfxsf
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "57600"
+
+
+      # API Base URL
+      - key: API_BASE_URL
+        value: https://your-app.onrender.com
+
+            # MongoDB Configuration
+      - key: MONGO_URI
+        value: 'mongodb+srv://adityavardhan225:Aditya225@test.ukco3.mongodb.net/?retryWrites=true&w=majority&appName=test'
+
+databases:
+  # Redis for Celery
+  - name: woopos-redis
+    type: redis
+    plan: free

@@ -25,10 +25,12 @@ from starlette.background import BackgroundTask
 load_dotenv()
 
 # Configure Redis for task queue
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost") 
-REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
-REDIS_DB = int(os.getenv("REDIS_DB", "0"))
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
+# REDIS_HOST = os.getenv("REDIS_HOST", "localhost") 
+# REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
+# REDIS_DB = int(os.getenv("REDIS_DB", "0"))
+# REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 # Email configuration
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
@@ -39,13 +41,15 @@ FROM_EMAIL = os.getenv("FROM_EMAIL", SMTP_USERNAME)
 FROM_NAME = os.getenv("FROM_NAME", "WooPOS")
 
 # Setup Redis connection
-redis_client = redis.Redis(
-    host=REDIS_HOST,
-    port=REDIS_PORT,
-    db=REDIS_DB,
-    password=REDIS_PASSWORD,
-    # decode_responses=True
-)
+# redis_client = redis.Redis(
+#     host=REDIS_HOST,
+#     port=REDIS_PORT,
+#     db=REDIS_DB,
+#     password=REDIS_PASSWORD,
+#     # decode_responses=True
+# )
+
+redis_client = redis.Redis.from_url(REDIS_URL)
 
 router = APIRouter()
 db = client["wookraft_db"]

@@ -353,10 +353,19 @@ coupon_collection = db["coupons"]
 menu_collection = db["menu_items"]
 
 # Celery setup
+# celery_app = Celery(
+#     "discount_tasks",
+#     broker="redis://localhost:6379/0",
+#     backend="redis://localhost:6379/0"
+# )
+
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+
+# Celery setup
 celery_app = Celery(
     "discount_tasks",
-    broker="redis://localhost:6379/0",
-    backend="redis://localhost:6379/0"
+    broker=REDIS_URL,
+    backend=REDIS_URL
 )
 
 # Celery configuration

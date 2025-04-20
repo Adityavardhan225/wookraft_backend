@@ -18,16 +18,20 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Redis configuration
-REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
-REDIS_PORT = os.getenv('REDIS_PORT', '6379')
-REDIS_DB = os.getenv('REDIS_DB', '0')
-REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+# REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+# REDIS_PORT = os.getenv('REDIS_PORT', '6379')
+# REDIS_DB = os.getenv('REDIS_DB', '0')
+# REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 
-# Build Redis URL
-if REDIS_PASSWORD:
-    REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
-else:
-    REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+# # Build Redis URL
+# if REDIS_PASSWORD:
+#     REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+# else:
+#     REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+
+# Use REDIS_URL for deployment
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+
 try:
     from routes.campaign.sending_campaign.services.campaign_tasks import celery_app
 except ImportError:

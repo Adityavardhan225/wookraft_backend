@@ -12,11 +12,18 @@ import uuid
 load_dotenv()
 
 # Configure Cloudinary
+# cloudinary.config(
+#         cloud_name = 'dl91gwshv', 
+#         api_key = '392761399558392', 
+#         api_secret = 'N8dW3ksMCt41qCfzFeobTh701hM',
+#         secure=True
+# )
+
 cloudinary.config(
-        cloud_name = 'dl91gwshv', 
-        api_key = '392761399558392', 
-        api_secret = 'N8dW3ksMCt41qCfzFeobTh701hM',
-        secure=True
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
+    secure=True
 )
 
 
