@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = MongoClient(os.getenv('MONGO_URI'), server_api=ServerApi('1')) 
+client = MongoClient(os.getenv('MONGO_URI'), server_api=ServerApi('1'),tls=True,tlsAllowInvalidCertificates=False ) 
 
 db = client["wookraft_db"]
 

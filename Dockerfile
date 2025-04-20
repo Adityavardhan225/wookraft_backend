@@ -1,6 +1,16 @@
 # Use the official Python image as the base image
 FROM python:3.10
 
+
+# Install system dependencies for SSL and pip
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libssl-dev \
+    ca-certificates \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+    
 # Set environment variables to prevent Python from writing .pyc files and buffering stdout/stderr
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
