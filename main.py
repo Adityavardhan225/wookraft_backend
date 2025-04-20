@@ -30,7 +30,7 @@ from routes.campaign.sending_campaign.routes import email_template_routes
 
 
 app = FastAPI()
-origins = ["*"]
+origins = ["https://wookraft.netlify.app/"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
