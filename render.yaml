@@ -18,7 +18,6 @@ services:
         value: 'zfctwgpgwqzilpgg'
       - key: EMAIL_SENDER
         value: 'wookraft.aya@gmail.com'
-      
 
       # Redis Configuration
       - key: REDIS_URL
@@ -44,7 +43,7 @@ services:
 
       # API Base URL
       - key: API_BASE_URL
-        value: https://your-app.onrender.com
+        value: https://woopos-web.onrender.com
 
       # MongoDB Configuration
       - key: MONGO_URI
@@ -91,12 +90,11 @@ services:
       - key: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
         value: '57600'
 
-
       # API Base URL
       - key: API_BASE_URL
-        value: https://your-app.onrender.com
+        value: https://woopos-web.onrender.com
 
-            # MongoDB Configuration
+      # MongoDB Configuration
       - key: MONGO_URI
         value: 'mongodb+srv://adityavardhan225:Aditya225@test.ukco3.mongodb.net/?retryWrites=true&w=majority&appName=test'
 
