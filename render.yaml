@@ -16,7 +16,7 @@ services:
         value: 'wookraft.aya@gmail.com'
       - key: SMTP_PASSWORD
         value: 'zfctwgpgwqzilpgg'
-      - key: FROM_EMAIL
+      - key: EMAIL_SENDER
         value: 'wookraft.aya@gmail.com'
       
 
@@ -35,12 +35,12 @@ services:
         value: 'N8dW3ksMCt41qCfzFeobTh701hM'
 
       # JWT Configuration
-      - key: JWT_SECRET_KEY
-        value: 789jflksbas2343kjdfk45454jfskdl4332342nkndvfxsf
+      - key: JWT_SECRET
+        value: '789jflksbas2343kjdfk45454jfskdl4332342nkndvfxsf'
       - key: JWT_ALGORITHM
-        value: HS256
+        value: 'HS256'
       - key: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
-        value: "57600"
+        value: '57600'
 
       # API Base URL
       - key: API_BASE_URL
@@ -72,7 +72,7 @@ services:
         value: 'wookraft.aya@gmail.com'
       - key: SMTP_PASSWORD
         value: 'zfctwgpgwqzilpgg'
-      - key: FROM_EMAIL
+      - key: EMAIL_SENDER
         value: 'wookraft.aya@gmail.com'
 
       # Cloudinary Configuration
@@ -84,12 +84,12 @@ services:
         value: 'N8dW3ksMCt41qCfzFeobTh701hM'
 
       # JWT Configuration
-      - key: JWT_SECRET_KEY
-        value: 789jflksbas2343kjdfk45454jfskdl4332342nkndvfxsf
+      - key: JWT_SECRET
+        value: '789jflksbas2343kjdfk45454jfskdl4332342nkndvfxsf'
       - key: JWT_ALGORITHM
-        value: HS256
+        value: 'HS256'
       - key: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
-        value: "57600"
+        value: '57600'
 
 
       # API Base URL
