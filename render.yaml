@@ -1,5 +1,4 @@
 services:
-  # FastAPI Web Backend
   - name: woopos-web
     type: web
     env: python
@@ -8,11 +7,8 @@ services:
     startCommand: uvicorn main:app --host 0.0.0.0 --port 8000
     envVars:
       - key: REDIS_URL
-        fromDatabase:
-          name: woopos-redis
-          property: connectionString
+        value: YOUR_REDIS_URL_HERE
 
-  # Celery Worker 1
   - name: celery-worker-campaign
     type: worker
     env: python
@@ -21,11 +17,8 @@ services:
     startCommand: celery -A routes.campaign.sending_campaign.services.campaign_tasks worker -l info --pool=solo
     envVars:
       - key: REDIS_URL
-        fromDatabase:
-          name: woopos-redis
-          property: connectionString
+        value: YOUR_REDIS_URL_HERE
 
-  # Celery Beat 1
   - name: celery-beat-campaign
     type: worker
     env: python
@@ -34,11 +27,8 @@ services:
     startCommand: celery -A routes.campaign.sending_campaign.services.campaign_tasks beat -l info
     envVars:
       - key: REDIS_URL
-        fromDatabase:
-          name: woopos-redis
-          property: connectionString
+        value: YOUR_REDIS_URL_HERE
 
-  # Celery Worker 2
   - name: celery-worker-discount
     type: worker
     env: python
@@ -47,11 +37,8 @@ services:
     startCommand: celery -A routes.admin_function.discount_calculation worker --loglevel=info
     envVars:
       - key: REDIS_URL
-        fromDatabase:
-          name: woopos-redis
-          property: connectionString
+        value: YOUR_REDIS_URL_HERE
 
-  # Celery Beat 2
   - name: celery-beat-discount
     type: worker
     env: python
@@ -60,13 +47,4 @@ services:
     startCommand: celery -A routes.admin_function.discount_calculation beat --loglevel=info
     envVars:
       - key: REDIS_URL
-        fromDatabase:
-          name: woopos-redis
-          property: connectionString
-
-databases:
-  - name: woopos-redis
-    databaseName: default
-    type: redis
-    plan: free
-    region: oregon
+        value: YOUR_REDIS_URL_HERE
