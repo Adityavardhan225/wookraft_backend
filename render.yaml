@@ -1,10 +1,9 @@
 services:
-  # 🚀 FastAPI Web Service
+  # FastAPI Web Backend
   - name: woopos-web
     type: web
     env: python
     region: oregon
-    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 8000
     envVars:
@@ -12,17 +11,12 @@ services:
         fromDatabase:
           name: woopos-redis
           property: connectionString
-      - key: CELERY_BROKER_URL
-        fromDatabase:
-          name: woopos-redis
-          property: connectionString
 
-  # 🛠️ Celery Worker for campaign_tasks
-  - name: worker-campaign
+  # Celery Worker 1
+  - name: celery-worker-campaign
     type: worker
     env: python
     region: oregon
-    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: celery -A routes.campaign.sending_campaign.services.campaign_tasks worker -l info --pool=solo
     envVars:
@@ -30,17 +24,12 @@ services:
         fromDatabase:
           name: woopos-redis
           property: connectionString
-      - key: CELERY_BROKER_URL
-        fromDatabase:
-          name: woopos-redis
-          property: connectionString
 
-  # ⏰ Celery Beat for campaign_tasks
-  - name: beat-campaign
+  # Celery Beat 1
+  - name: celery-beat-campaign
     type: worker
     env: python
     region: oregon
-    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: celery -A routes.campaign.sending_campaign.services.campaign_tasks beat -l info
     envVars:
@@ -48,35 +37,25 @@ services:
         fromDatabase:
           name: woopos-redis
           property: connectionString
-      - key: CELERY_BROKER_URL
-        fromDatabase:
-          name: woopos-redis
-          property: connectionString
 
-  # 🛠️ Celery Worker for discount_calculation
-  - name: worker-discount
+  # Celery Worker 2
+  - name: celery-worker-discount
     type: worker
     env: python
     region: oregon
-    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: celery -A routes.admin_function.discount_calculation worker --loglevel=info --pool=solo
+    startCommand: celery -A routes.admin_function.discount_calculation worker --loglevel=info
     envVars:
       - key: REDIS_URL
         fromDatabase:
           name: woopos-redis
           property: connectionString
-      - key: CELERY_BROKER_URL
-        fromDatabase:
-          name: woopos-redis
-          property: connectionString
 
-  # ⏰ Celery Beat for discount_calculation
-  - name: beat-discount
+  # Celery Beat 2
+  - name: celery-beat-discount
     type: worker
     env: python
     region: oregon
-    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: celery -A routes.admin_function.discount_calculation beat --loglevel=info
     envVars:
@@ -84,14 +63,10 @@ services:
         fromDatabase:
           name: woopos-redis
           property: connectionString
-      - key: CELERY_BROKER_URL
-        fromDatabase:
-          name: woopos-redis
-          property: connectionString
 
 databases:
-  # 🧠 Redis Database for Celery Broker/Backend
   - name: woopos-redis
+    databaseName: default
     type: redis
     plan: free
     region: oregon
