@@ -386,7 +386,7 @@ async def send_campaign(
             print(f"campaign_data: {campaign_data}")
             # Add to the processing queue
             redis_client.lpush("email_campaigns_queue", json.dumps(campaign_data))
-            print(campaign_data)
+            print(122333999)
             # Start a background worker process to handle the queue
             # In a real implementation, you'd have a separate worker process
             # Here we're using background tasks as a simplified example
