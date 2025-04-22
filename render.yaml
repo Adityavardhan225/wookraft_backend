@@ -5,39 +5,38 @@ services:
     region: oregon
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 8000
-    envVars:
-      - key: REDIS_URL
-        value: YOUR_REDIS_URL_HERE
+
+ 
 
   - name: celery-worker-campaign
     type: worker
     env: python
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: celery -A routes.campaign.sending_campaign.services.campaign_tasks worker -l info --pool=solo
+    startCommand: celery -A routes.campaign.sending_campaign.services.campaign_tasks worker --loglevel=info --pool=solo
     envVars:
       - key: REDIS_URL
-        value: YOUR_REDIS_URL_HERE
+        sync: false
 
   - name: celery-beat-campaign
     type: worker
     env: python
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: celery -A routes.campaign.sending_campaign.services.campaign_tasks beat -l info
+    startCommand: celery -A routes.campaign.sending_campaign.services.campaign_tasks beat --loglevel=info
     envVars:
       - key: REDIS_URL
-        value: YOUR_REDIS_URL_HERE
+        sync: false
 
   - name: celery-worker-discount
     type: worker
     env: python
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: celery -A routes.admin_function.discount_calculation worker --loglevel=info
+    startCommand: celery -A routes.admin_function.discount_calculation worker --loglevel=info --pool=solo
     envVars:
       - key: REDIS_URL
-        value: YOUR_REDIS_URL_HERE
+        sync: false
 
   - name: celery-beat-discount
     type: worker
@@ -47,4 +46,4 @@ services:
     startCommand: celery -A routes.admin_function.discount_calculation beat --loglevel=info
     envVars:
       - key: REDIS_URL
-        value: YOUR_REDIS_URL_HERE
+        sync: false
