@@ -31,7 +31,7 @@ load_dotenv()
 # REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-
+print("REDIS_URL", REDIS_URL )
 # Email configuration
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
@@ -50,7 +50,7 @@ FROM_NAME = os.getenv("FROM_NAME", "WooPOS")
 # )
 
 redis_client = redis.Redis.from_url(REDIS_URL)
-
+print("redis_client", redis_client)
 router = APIRouter()
 db = client["wookraft_db"]
 campaigns_collection = db["email_campaigns"]
@@ -310,13 +310,14 @@ async def send_campaign(
                 status_code=404,
                 detail="Email campaign not found"
             )
-        
+        print(f'campaign: {campaign}')
         # Check if campaign can be sent
         if campaign["status"] not in ["draft"]:
             raise HTTPException(
                 status_code=400,
                 detail=f"Cannot send campaign with status: {campaign['status']}"
             )
+        print(f'list_id: {list_id}')
         
         if list_id:
             # Verify the list exists and belongs to the user
@@ -346,7 +347,7 @@ async def send_campaign(
             campaign = campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
 
 
-        
+        print(f'campaign 1: {campaign}')
         
         # Schedule for future or send now
         if campaign.get("schedule_time") and campaign["schedule_time"] > datetime.now():
@@ -355,6 +356,7 @@ async def send_campaign(
                 {"_id": ObjectId(campaign_id)},
                 {"$set": {"status": "scheduled", "scheduled_at": datetime.now()}}
             )
+            print(f"Campaign {campaign_id} scheduled for {campaign['schedule_time']}")
             
             # Add to scheduled tasks in Redis
             schedule_time_ts = int(campaign["schedule_time"].timestamp())
@@ -381,7 +383,7 @@ async def send_campaign(
                 "campaign_id": str(campaign["_id"]),
                 "task_id": task_id
             }
-            
+            print(f"campaign_data: {campaign_data}")
             # Add to the processing queue
             redis_client.lpush("email_campaigns_queue", json.dumps(campaign_data))
             print(campaign_data)
