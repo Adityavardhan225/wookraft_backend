@@ -385,7 +385,13 @@ async def send_campaign(
             }
             print(f"campaign_data: {campaign_data}")
             # Add to the processing queue
-            redis_client.lpush("email_campaigns_queue", json.dumps(campaign_data))
+            # redis_client.lpush("email_campaigns_queue", json.dumps(campaign_data))
+            try:
+                redis_client.lpush("email_campaigns_queue", json.dumps(campaign_data))
+                print("Campaign data pushed to Redis successfully!")
+            except Exception as e:
+                print(f"Failed to push campaign data to Redis: {e}")
+                raise e
             print(122333999)
             # Start a background worker process to handle the queue
             # In a real implementation, you'd have a separate worker process
