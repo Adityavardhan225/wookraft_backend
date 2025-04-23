@@ -12,6 +12,7 @@ import os
 from routes.campaign.sending_campaign.services.email_service import email_service
 from configurations.config import client
 from routes.campaign.customer_segment_services import get_customers_for_combined_criteria
+from redis import Redis
 
 
 # REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
@@ -51,6 +52,13 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+def get_redis_client() -> Redis:
+    return Redis.from_url(
+        REDIS_URL,
+        decode_responses=True,
+        health_check_interval=10,
+        ssl_cert_reqs=None if REDIS_URL.startswith("rediss://") else None
+    )
 
 # Add this to your campaign_tasks.py
 celery_app.conf.beat_schedule = {
@@ -73,6 +81,7 @@ email_logs_collection = db["email_logs"]
 # Queue name for Redis
 EMAIL_QUEUE = 'email_campaigns_queue'
 SCHEDULED_CAMPAIGNS = 'scheduled_campaigns'
+
 
 @celery_app.task(name="send_campaign_email")
 def send_campaign_email(
@@ -381,14 +390,16 @@ def check_scheduled_campaigns() -> Dict[str, Any]:
     
     try:
         # Get Redis connection
-        from redis import Redis
-        redis_client = Redis(
-            host=os.getenv('REDIS_HOST', 'localhost'),
-            port=int(os.getenv('REDIS_PORT', '6379')),
-            db=int(os.getenv('REDIS_DB', '0')),
-            password=os.getenv('REDIS_PASSWORD')
-        )
-        
+        # from redis import Redis
+        # redis_client = Redis(
+        #     host=os.getenv('REDIS_HOST', 'localhost'),
+        #     port=int(os.getenv('REDIS_PORT', '6379')),
+        #     db=int(os.getenv('REDIS_DB', '0')),
+        #     password=os.getenv('REDIS_PASSWORD')
+        # )
+        redis_client = get_redis_client()
+        redis_client.ping()
+        logger.info("Redis connection successful")
         # Test Redis connection
         try:
             redis_client.ping()
@@ -463,13 +474,18 @@ def process_campaign_queue() -> Dict[str, Any]:
     
     try:
         # Get Redis connection
-        from redis import Redis
-        redis_client = Redis(
-            host=os.getenv('REDIS_HOST', 'localhost'),
-            port=int(os.getenv('REDIS_PORT', '6379')),
-            db=int(os.getenv('REDIS_DB', '0')),
-            password=os.getenv('REDIS_PASSWORD')
-        )
+        # from redis import Redis
+        # redis_client = Redis(
+        #     host=os.getenv('REDIS_HOST', 'localhost'),
+        #     port=int(os.getenv('REDIS_PORT', '6379')),
+        #     db=int(os.getenv('REDIS_DB', '0')),
+        #     password=os.getenv('REDIS_PASSWORD')
+        # )
+
+        redis_client = get_redis_client()
+        redis_client.ping()
+        logger.info("Redis connection successful")
+
         
         # Get campaigns from queue (up to 5 at a time)
         processed_count = 0
