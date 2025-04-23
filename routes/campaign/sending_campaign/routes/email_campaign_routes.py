@@ -312,6 +312,166 @@ async def update_email_campaign(
             detail=f"Failed to update email campaign: {str(e)}"
         )
 
+# @router.post("/{campaign_id}/send", response_model=Dict[str, Any])
+# async def send_campaign(
+#     campaign_id: str = Path(...),
+#     list_id: Optional[str] = None,
+#     background_tasks: BackgroundTasks = None,
+#     current_user: dict = Depends(get_current_user)
+# ):
+#     """
+#     Send an email campaign immediately or schedule it
+#     """
+#     try:
+#         # Check if campaign exists
+#         campaign = campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
+#         if not campaign:
+#             raise HTTPException(
+#                 status_code=404,
+#                 detail="Email campaign not found"
+#             )
+#         print(f'campaign: {campaign}')
+#         # Check if campaign can be sent
+#         if campaign["status"] not in ["draft"]:
+#             raise HTTPException(
+#                 status_code=400,
+#                 detail=f"Cannot send campaign with status: {campaign['status']}"
+#             )
+#         print(f'list_id: {list_id}')
+        
+#         if list_id:
+#             # Verify the list exists and belongs to the user
+#             recipient_list = recipient_lists_collection.find_one({
+#                 "_id": ObjectId(list_id),
+#                 "created_by": current_user.id  # Security check
+#             })
+            
+#             if not recipient_list:
+#                 raise HTTPException(
+#                     status_code=404,
+#                     detail="Recipient list not found or access denied"
+#                 )
+            
+#             # Update campaign to use ONLY this recipient list - clear any other recipient sources
+#             campaigns_collection.update_one(
+#                 {"_id": ObjectId(campaign_id)},
+#                 {"$set": {
+#                     "recipient_list_id": list_id,
+#                     "recipient_source": "recipient_list",
+#                     "statistics.total_recipients": recipient_list["total_recipients"],
+#                     # Clear any segment-based targeting to ensure only the list is used
+#                     "segment_ids": [],
+#                     "custom_filters": []
+#                 }}
+#             )
+#             campaign = campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
+
+
+#         print(f'campaign 1: {campaign}')
+        
+#         # Schedule for future or send now
+#         if campaign.get("schedule_time") and campaign["schedule_time"] > datetime.now():
+#             # Set status to scheduled
+#             campaigns_collection.update_one(
+#                 {"_id": ObjectId(campaign_id)},
+#                 {"$set": {"status": "scheduled", "scheduled_at": datetime.now()}}
+#             )
+#             print(f"Campaign {campaign_id} scheduled for {campaign['schedule_time']}")
+            
+#             # Add to scheduled tasks in Redis
+
+
+#             # schedule_time_ts = int(campaign["schedule_time"].timestamp())
+#             # dt_local = datetime.fromtimestamp(schedule_time_ts)
+#             # current_time = int(datetime.now().timestamp())
+#             # time_diff = schedule_time_ts - current_time
+
+#             # # Debug logging
+#             # print(f"Current time: {datetime.now().isoformat()}")
+#             # print(f"Schedule time: {campaign['schedule_time'].isoformat()}")
+#             # print(f"Time difference: {time_diff} seconds")
+#             # print(f"Scheduling campaign {campaign_id} for {campaign['schedule_time']} (timestamp: {schedule_time_ts} (date and time : {dt_local}))")
+#             # task_id = f"campaign:{campaign_id}"
+#             # redis_client.zadd("scheduled_campaigns", {task_id: schedule_time_ts})
+
+
+#             # Add this to your send_campaign function where scheduling happens
+
+#             # Fix for year/timestamp issue - normalize to current system time
+#             # scheduled_time = campaign["schedule_time"]
+#             # schedule_time_ts = int(scheduled_time.timestamp())
+
+#             scheduled_time = campaign["schedule_time"]  # Keep as naive
+#             schedule_time_ts = int(scheduled_time.timestamp())
+            
+#             # Use naive datetime consistently for calculations
+#             now = datetime.now()  # Naive datetime
+            
+#             # Now both datetimes are naive, so subtraction works
+#             time_diff_seconds = (scheduled_time - now).total_seconds()
+            
+#             days = time_diff_seconds // (24 * 3600)
+#             hours = (time_diff_seconds % (24 * 3600)) // 3600
+#             minutes = (time_diff_seconds % 3600) // 60
+#             seconds = time_diff_seconds % 60
+            
+#             print(f"Current time: {now.isoformat()}")
+#             print(f"Scheduled for: {scheduled_time.isoformat()}")
+#             print(f"Time difference: {days:.0f} days, {hours:.0f} hours, {minutes:.0f} minutes, {seconds:.0f} seconds")
+            
+#             # Add to Redis with exact timestamp
+#             task_id = f"campaign:{campaign_id}"
+#             redis_client.zadd("scheduled_campaigns", {task_id: schedule_time_ts})
+            
+#             return {
+#                 "status": "success",
+#                 "message": f"Campaign scheduled for {campaign['schedule_time'].isoformat()}"
+#             }
+#         else:
+#             # Start processing immediately
+#             # Set status to processing
+#             campaigns_collection.update_one(
+#                 {"_id": ObjectId(campaign_id)},
+#                 {"$set": {"status": "processing", "started_at": datetime.now()}}
+#             )
+            
+#             # Queue the campaign for processing
+#             task_id = str(uuid.uuid4())
+#             campaign_data = {
+#                 "campaign_id": str(campaign["_id"]),
+#                 "task_id": task_id
+#             }
+#             print(f"campaign_data: {campaign_data}")
+#             # Add to the processing queue
+#             # redis_client.lpush("email_campaigns_queue", json.dumps(campaign_data))
+#             try:
+#                 redis_client.lpush("email_campaigns_queue", json.dumps(campaign_data))
+#                 print("Campaign data pushed to Redis successfully!")
+#             except Exception as e:
+#                 print(f"Failed to push campaign data to Redis: {e}")
+#                 raise e
+#             print(122333999)
+#             # Start a background worker process to handle the queue
+#             # In a real implementation, you'd have a separate worker process
+#             # Here we're using background tasks as a simplified example
+#             if background_tasks:
+#                 background_tasks.add_task(process_campaign_queue)
+            
+#             return {
+#                 "status": "success",
+#                 "message": "Campaign processing started",
+#                 "task_id": task_id
+#             }
+    
+#     except Exception as e:
+#         if isinstance(e, HTTPException):
+#             raise e
+#         raise HTTPException(
+#             status_code=500,
+#             detail=f"Failed to send email campaign: {str(e)}"
+#         )
+
+
 @router.post("/{campaign_id}/send", response_model=Dict[str, Any])
 async def send_campaign(
     campaign_id: str = Path(...),
@@ -319,31 +479,31 @@ async def send_campaign(
     background_tasks: BackgroundTasks = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """
-    Send an email campaign immediately or schedule it
-    """
+    """Send an email campaign immediately or schedule it"""
     try:
         # Check if campaign exists
         campaign = campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
-            raise HTTPException(
-                status_code=404,
-                detail="Email campaign not found"
-            )
-        print(f'campaign: {campaign}')
+            raise HTTPException(status_code=404, detail="Email campaign not found")
+            
+        print(f"[DEBUG] Campaign found: {campaign_id}")
+        print(f"[DEBUG] Campaign details: {campaign}")
+        
         # Check if campaign can be sent
         if campaign["status"] not in ["draft"]:
             raise HTTPException(
                 status_code=400,
                 detail=f"Cannot send campaign with status: {campaign['status']}"
             )
-        print(f'list_id: {list_id}')
         
+        print(f"[DEBUG] Processing recipient list_id: {list_id}")
+        
+        # Handle recipient list if provided
         if list_id:
             # Verify the list exists and belongs to the user
             recipient_list = recipient_lists_collection.find_one({
                 "_id": ObjectId(list_id),
-                "created_by": current_user.id  # Security check
+                "created_by": current_user.id
             })
             
             if not recipient_list:
@@ -352,22 +512,18 @@ async def send_campaign(
                     detail="Recipient list not found or access denied"
                 )
             
-            # Update campaign to use ONLY this recipient list - clear any other recipient sources
+            # Update campaign to use ONLY this recipient list
             campaigns_collection.update_one(
                 {"_id": ObjectId(campaign_id)},
                 {"$set": {
                     "recipient_list_id": list_id,
                     "recipient_source": "recipient_list",
                     "statistics.total_recipients": recipient_list["total_recipients"],
-                    # Clear any segment-based targeting to ensure only the list is used
                     "segment_ids": [],
                     "custom_filters": []
                 }}
             )
             campaign = campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
-
-
-        print(f'campaign 1: {campaign}')
         
         # Schedule for future or send now
         if campaign.get("schedule_time") and campaign["schedule_time"] > datetime.now():
@@ -376,60 +532,49 @@ async def send_campaign(
                 {"_id": ObjectId(campaign_id)},
                 {"$set": {"status": "scheduled", "scheduled_at": datetime.now()}}
             )
-            print(f"Campaign {campaign_id} scheduled for {campaign['schedule_time']}")
             
-            # Add to scheduled tasks in Redis
-
-
-            # schedule_time_ts = int(campaign["schedule_time"].timestamp())
-            # dt_local = datetime.fromtimestamp(schedule_time_ts)
-            # current_time = int(datetime.now().timestamp())
-            # time_diff = schedule_time_ts - current_time
-
-            # # Debug logging
-            # print(f"Current time: {datetime.now().isoformat()}")
-            # print(f"Schedule time: {campaign['schedule_time'].isoformat()}")
-            # print(f"Time difference: {time_diff} seconds")
-            # print(f"Scheduling campaign {campaign_id} for {campaign['schedule_time']} (timestamp: {schedule_time_ts} (date and time : {dt_local}))")
-            # task_id = f"campaign:{campaign_id}"
-            # redis_client.zadd("scheduled_campaigns", {task_id: schedule_time_ts})
-
-
-            # Add this to your send_campaign function where scheduling happens
-
-            # Fix for year/timestamp issue - normalize to current system time
-            # scheduled_time = campaign["schedule_time"]
-            # schedule_time_ts = int(scheduled_time.timestamp())
-
-            scheduled_time = campaign["schedule_time"]  # Keep as naive
-            schedule_time_ts = int(scheduled_time.timestamp())
+            # SOLUTION: Use created_at as reference time to calculate scheduling
+            created_at = campaign["created_at"]
+            scheduled_time = campaign["schedule_time"]
             
-            # Use naive datetime consistently for calculations
-            now = datetime.now()  # Naive datetime
+            print(f"[DEBUG] Campaign created at: {created_at.isoformat()}")
+            print(f"[DEBUG] Scheduled for: {scheduled_time.isoformat()}")
             
-            # Now both datetimes are naive, so subtraction works
-            time_diff_seconds = (scheduled_time - now).total_seconds()
+            # Calculate minutes between creation and scheduled time
+            # This is our relative delay that works regardless of system time
+            relative_delay_seconds = (scheduled_time - created_at).total_seconds()
+            print(f"[DEBUG] Time from creation to schedule: {relative_delay_seconds:.1f} seconds")
             
-            days = time_diff_seconds // (24 * 3600)
-            hours = (time_diff_seconds % (24 * 3600)) // 3600
-            minutes = (time_diff_seconds % 3600) // 60
-            seconds = time_diff_seconds % 60
+            # Get current worker timestamp for execution
+            now = datetime.now()
+            execute_at_ts = int(now.timestamp() + relative_delay_seconds)
+            execute_at_time = datetime.fromtimestamp(execute_at_ts)
             
-            print(f"Current time: {now.isoformat()}")
-            print(f"Scheduled for: {scheduled_time.isoformat()}")
-            print(f"Time difference: {days:.0f} days, {hours:.0f} hours, {minutes:.0f} minutes, {seconds:.0f} seconds")
+            # Calculate human-readable delay for logging
+            delay_days = relative_delay_seconds // (24 * 3600)
+            delay_hours = (relative_delay_seconds % (24 * 3600)) // 3600
+            delay_minutes = (relative_delay_seconds % 3600) // 60
+            delay_seconds = relative_delay_seconds % 60
             
-            # Add to Redis with exact timestamp
+            # Debug logs
+            print(f"[DEBUG] Current system time: {now.isoformat()}")
+            print(f"[DEBUG] Will execute at: {execute_at_time.isoformat()}")
+            print(f"[DEBUG] Relative delay: {delay_days:.0f}d {delay_hours:.0f}h {delay_minutes:.0f}m {delay_seconds:.0f}s")
+            
+            # Store in Redis with calculated execution timestamp
             task_id = f"campaign:{campaign_id}"
-            redis_client.zadd("scheduled_campaigns", {task_id: schedule_time_ts})
+            redis_client.zadd("scheduled_campaigns", {task_id: execute_at_ts})
             
+            # Return with user-friendly scheduled time
+            friendly_time = execute_at_time.strftime("%B %d, %Y at %I:%M %p")
             return {
                 "status": "success",
-                "message": f"Campaign scheduled for {campaign['schedule_time'].isoformat()}"
+                "message": f"Campaign scheduled for {friendly_time}",
+                "delay": f"{delay_days:.0f} days, {delay_hours:.0f} hours, {delay_minutes:.0f} minutes"
             }
         else:
-            # Start processing immediately
-            # Set status to processing
+            # Process campaign immediately
+            print(f"[DEBUG] Processing campaign immediately")
             campaigns_collection.update_one(
                 {"_id": ObjectId(campaign_id)},
                 {"$set": {"status": "processing", "started_at": datetime.now()}}
@@ -441,21 +586,17 @@ async def send_campaign(
                 "campaign_id": str(campaign["_id"]),
                 "task_id": task_id
             }
-            print(f"campaign_data: {campaign_data}")
-            # Add to the processing queue
-            # redis_client.lpush("email_campaigns_queue", json.dumps(campaign_data))
+            
             try:
                 redis_client.lpush("email_campaigns_queue", json.dumps(campaign_data))
-                print("Campaign data pushed to Redis successfully!")
+                print(f"[DEBUG] Campaign data pushed to Redis successfully: {campaign_data}")
             except Exception as e:
-                print(f"Failed to push campaign data to Redis: {e}")
+                print(f"[ERROR] Failed to push campaign data to Redis: {e}")
                 raise e
-            print(122333999)
-            # Start a background worker process to handle the queue
-            # In a real implementation, you'd have a separate worker process
-            # Here we're using background tasks as a simplified example
+            
             if background_tasks:
                 background_tasks.add_task(process_campaign_queue)
+                print(f"[DEBUG] Background task added to process queue")
             
             return {
                 "status": "success",
@@ -464,6 +605,7 @@ async def send_campaign(
             }
     
     except Exception as e:
+        print(f"[ERROR] Campaign scheduling failed: {str(e)}")
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
