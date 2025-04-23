@@ -533,40 +533,47 @@ async def send_campaign(
                 {"$set": {"status": "scheduled", "scheduled_at": datetime.now()}}
             )
             
-            # SOLUTION: Use created_at as reference time to calculate scheduling
+            # Get time references
             created_at = campaign["created_at"]
             scheduled_time = campaign["schedule_time"]
+            now = datetime.now()
             
             print(f"[DEBUG] Campaign created at: {created_at.isoformat()}")
             print(f"[DEBUG] Scheduled for: {scheduled_time.isoformat()}")
+            print(f"[DEBUG] Current system time: {now.isoformat()}")
             
-            # Calculate minutes between creation and scheduled time
-            # This is our relative delay that works regardless of system time
-            relative_delay_seconds = (scheduled_time - created_at).total_seconds()
-            print(f"[DEBUG] Time from creation to schedule: {relative_delay_seconds:.1f} seconds")
+            # Calculate system clock offset (how much system time differs from MongoDB time)
+            time_offset = (now - created_at).total_seconds()
+            print(f"[DEBUG] System clock offset: {time_offset:.1f} seconds")
             
-            # Get current worker timestamp for execution
-            now = datetime.now()
-            execute_at_ts = int(now.timestamp() + relative_delay_seconds)
-            execute_at_time = datetime.fromtimestamp(execute_at_ts)
+            # Apply offset to scheduled time to get correct UTC time
+            # If system is ahead (future year), offset is positive, so we subtract
+            corrected_time = scheduled_time - timedelta(seconds=time_offset)
+            execute_at_ts = int(corrected_time.timestamp())
             
-            # Calculate human-readable delay for logging
-            delay_days = relative_delay_seconds // (24 * 3600)
-            delay_hours = (relative_delay_seconds % (24 * 3600)) // 3600
-            delay_minutes = (relative_delay_seconds % 3600) // 60
-            delay_seconds = relative_delay_seconds % 60
+            # For user display, show when it will execute according to system time
+            execute_at_system_time = datetime.fromtimestamp(execute_at_ts + time_offset)
+            
+            # Calculate human-readable delay
+            delay_seconds = (scheduled_time - now).total_seconds()
+            delay_days = delay_seconds // (24 * 3600)
+            delay_hours = (delay_seconds % (24 * 3600)) // 3600
+            delay_minutes = (delay_seconds % 3600) // 60
+            delay_secs = delay_seconds % 60
             
             # Debug logs
-            print(f"[DEBUG] Current system time: {now.isoformat()}")
-            print(f"[DEBUG] Will execute at: {execute_at_time.isoformat()}")
-            print(f"[DEBUG] Relative delay: {delay_days:.0f}d {delay_hours:.0f}h {delay_minutes:.0f}m {delay_seconds:.0f}s")
+            print(f"[DEBUG] System time offset: {time_offset:.1f} seconds")
+            print(f"[DEBUG] Corrected execution time: {corrected_time.isoformat()}")
+            print(f"[DEBUG] Redis timestamp: {execute_at_ts} ({datetime.fromtimestamp(execute_at_ts).isoformat()})")
+            print(f"[DEBUG] Will execute at (system time): {execute_at_system_time.isoformat()}")
+            print(f"[DEBUG] Relative delay: {delay_days:.0f}d {delay_hours:.0f}h {delay_minutes:.0f}m {delay_secs:.0f}s")
             
-            # Store in Redis with calculated execution timestamp
+            # Store in Redis with corrected timestamp
             task_id = f"campaign:{campaign_id}"
             redis_client.zadd("scheduled_campaigns", {task_id: execute_at_ts})
             
-            # Return with user-friendly scheduled time
-            friendly_time = execute_at_time.strftime("%B %d, %Y at %I:%M %p")
+            # Return with friendly format for the user
+            friendly_time = execute_at_system_time.strftime("%B %d, %Y at %I:%M %p")
             return {
                 "status": "success",
                 "message": f"Campaign scheduled for {friendly_time}",
