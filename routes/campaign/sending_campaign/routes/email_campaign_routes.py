@@ -21,6 +21,12 @@ from fastapi.responses import JSONResponse, FileResponse
 import pandas as pd
 from starlette.background import BackgroundTask
 
+
+from dateutil import parser
+import pytz
+
+
+
 # Load environment variables
 load_dotenv()
 
@@ -106,14 +112,29 @@ async def create_email_campaign(
         
 
         schedule_time = None
-        if "schedule_time" in campaign_data and campaign_data["schedule_time"]:
-            # Parse the ISO format string to datetime
-            local_time = datetime.now()
+        # if "schedule_time" in campaign_data and campaign_data["schedule_time"]:
+        #     # Parse the ISO format string to datetime
+        #     local_time = datetime.now()
             
-            # Store original timezone info for logging
-            original_tz = local_time.tzinfo
-            schedule_time = local_time.astimezone(timezone.utc).replace(tzinfo=None)
-            print(f"[DEBUG] Converted {original_tz} time to UTC: {schedule_time} and {local_time} ")
+        #     # Store original timezone info for logging
+        #     original_tz = local_time.tzinfo
+        #     schedule_time = local_time.astimezone(timezone.utc).replace(tzinfo=None)
+        #     print(f"[DEBUG] Converted {original_tz} time to UTC: {schedule_time} and {local_time} ")
+
+
+        if "schedule_time" in campaign_data and campaign_data["schedule_time"]:
+            # Parse user-provided schedule time
+            user_time = parser.isoparse(campaign_data["schedule_time"])
+
+            # Assume it's local time (from the user's device/browser)
+            # Replace this with your desired timezone if known (e.g., 'Asia/Kolkata')
+            local_tz = pytz.timezone("Asia/Kolkata")  # or use your user's timezone dynamically if stored
+            
+            # Localize and convert to UTC
+            localized_time = local_tz.localize(user_time)
+            schedule_time = localized_time.astimezone(pytz.utc).replace(tzinfo=None)
+
+            print(f"[DEBUG] User's time: {user_time}, Localized: {localized_time}, Converted to UTC: {schedule_time}")
 
         
         # Create campaign document
