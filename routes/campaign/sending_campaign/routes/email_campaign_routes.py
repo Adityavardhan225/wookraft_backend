@@ -52,11 +52,12 @@ FROM_NAME = os.getenv("FROM_NAME", "WooPOS")
 # redis_client = redis.Redis.from_url(REDIS_URL)
 redis_client = redis.Redis.from_url(
     REDIS_URL,
-    ssl=True,
+    
     health_check_interval=10,  # Check connection health every 10 seconds
     socket_connect_timeout=5,  # Timeout for connecting to the server (in seconds)
     retry_on_timeout=True,     # Retry if a timeout occurs
-    socket_keepalive=True      # Keep the connection alive
+    socket_keepalive=True,    # Keep the connection 
+    decode_responses=True
 )
 
 # Test Redis connection during startup
