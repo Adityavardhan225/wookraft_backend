@@ -2,4 +2,4 @@
 .env
 
 # Ignore Render config file (optional, if it's sensitive)
-render.yaml
+
