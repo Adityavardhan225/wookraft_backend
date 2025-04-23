@@ -401,17 +401,15 @@ async def send_campaign(
             # scheduled_time = campaign["schedule_time"]
             # schedule_time_ts = int(scheduled_time.timestamp())
 
-            now = datetime.now(timezone.utc)
-
-            # Convert schedule time to UTC if it isn't already
-            scheduled_time = campaign["schedule_time"].replace(tzinfo=timezone.utc)
-
-            # Use UTC timestamps for Redis
+            scheduled_time = campaign["schedule_time"]  # Keep as naive
             schedule_time_ts = int(scheduled_time.timestamp())
-                        
-            # Debug logging
-            now = datetime.now()
+            
+            # Use naive datetime consistently for calculations
+            now = datetime.now()  # Naive datetime
+            
+            # Now both datetimes are naive, so subtraction works
             time_diff_seconds = (scheduled_time - now).total_seconds()
+            
             days = time_diff_seconds // (24 * 3600)
             hours = (time_diff_seconds % (24 * 3600)) // 3600
             minutes = (time_diff_seconds % 3600) // 60
