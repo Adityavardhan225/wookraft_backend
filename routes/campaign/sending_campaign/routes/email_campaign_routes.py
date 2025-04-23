@@ -49,7 +49,24 @@ FROM_NAME = os.getenv("FROM_NAME", "WooPOS")
 #     # decode_responses=True
 # )
 
-redis_client = redis.Redis.from_url(REDIS_URL)
+# redis_client = redis.Redis.from_url(REDIS_URL)
+redis_client = redis.Redis.from_url(
+    REDIS_URL,
+    health_check_interval=10,  # Check connection health every 10 seconds
+    socket_connect_timeout=5,  # Timeout for connecting to the server (in seconds)
+    retry_on_timeout=True,     # Retry if a timeout occurs
+    socket_keepalive=True      # Keep the connection alive
+)
+
+# Test Redis connection during startup
+try:
+    redis_client.ping()
+    print("Redis connection successful!")
+except Exception as e:
+    print(f"Redis connection failed: {e}")
+    raise
+
+
 print("redis_client", redis_client)
 router = APIRouter()
 db = client["wookraft_db"]
