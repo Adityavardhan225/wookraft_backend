@@ -108,25 +108,26 @@ async def create_email_campaign(
         schedule_time = None
         if "schedule_time" in campaign_data and campaign_data["schedule_time"]:
             # Parse the ISO format string to datetime
-            local_time = datetime.fromisoformat(campaign_data["schedule_time"])
+            local_time = datetime.now()
             
             # Store original timezone info for logging
             original_tz = local_time.tzinfo
-            
+            schedule_time = local_time.astimezone(timezone.utc).replace(tzinfo=None)
+            print(f"[DEBUG] Converted {original_tz} time to UTC: {schedule_time}")
             # Ensure it's UTC - if naive (no timezone), assume it's in local time and convert
-            if local_time.tzinfo is None:
-                # Get current UTC offset
-                utc_now = datetime.utcnow()
-                local_now = datetime.now()
-                utc_offset = (local_now - utc_now).total_seconds()
+            # if local_time.tzinfo is None:
+            #     # Get current UTC offset
+            #     utc_now = datetime.datetime.utc()
+            #     local_now = datetime.now()
+            #     utc_offset = (local_now - utc_now).total_seconds()
                 
-                # Convert to UTC by subtracting the offset
-                schedule_time = local_time - timedelta(seconds=utc_offset)
-                print(f"[DEBUG] Converted local time {local_time} to UTC {schedule_time}")
-            else:
-                # Already has timezone, convert to UTC
-                schedule_time = local_time.astimezone(timezone.utc).replace(tzinfo=None)
-                print(f"[DEBUG] Converted {original_tz} time to UTC: {schedule_time}")
+            #     # Convert to UTC by subtracting the offset
+            #     schedule_time = local_time - timedelta(seconds=utc_offset)
+            #     print(f"[DEBUG] Converted local time {local_time} to UTC {schedule_time}")
+            # else:
+            #     # Already has timezone, convert to UTC
+            #     schedule_time = local_time.astimezone(timezone.utc).replace(tzinfo=None)
+            #     print(f"[DEBUG] Converted {original_tz} time to UTC: {schedule_time}")
         
         
         # Create campaign document
