@@ -379,16 +379,41 @@ async def send_campaign(
             print(f"Campaign {campaign_id} scheduled for {campaign['schedule_time']}")
             
             # Add to scheduled tasks in Redis
-            schedule_time_ts = int(campaign["schedule_time"].timestamp())
-            dt_local = datetime.fromtimestamp(schedule_time_ts)
-            current_time = int(datetime.now().timestamp())
-            time_diff = schedule_time_ts - current_time
 
+
+            # schedule_time_ts = int(campaign["schedule_time"].timestamp())
+            # dt_local = datetime.fromtimestamp(schedule_time_ts)
+            # current_time = int(datetime.now().timestamp())
+            # time_diff = schedule_time_ts - current_time
+
+            # # Debug logging
+            # print(f"Current time: {datetime.now().isoformat()}")
+            # print(f"Schedule time: {campaign['schedule_time'].isoformat()}")
+            # print(f"Time difference: {time_diff} seconds")
+            # print(f"Scheduling campaign {campaign_id} for {campaign['schedule_time']} (timestamp: {schedule_time_ts} (date and time : {dt_local}))")
+            # task_id = f"campaign:{campaign_id}"
+            # redis_client.zadd("scheduled_campaigns", {task_id: schedule_time_ts})
+
+
+            # Add this to your send_campaign function where scheduling happens
+
+            # Fix for year/timestamp issue - normalize to current system time
+            scheduled_time = campaign["schedule_time"]
+            schedule_time_ts = int(scheduled_time.timestamp())
+            
             # Debug logging
-            print(f"Current time: {datetime.now().isoformat()}")
-            print(f"Schedule time: {campaign['schedule_time'].isoformat()}")
-            print(f"Time difference: {time_diff} seconds")
-            print(f"Scheduling campaign {campaign_id} for {campaign['schedule_time']} (timestamp: {schedule_time_ts} (date and time : {dt_local}))")
+            now = datetime.now()
+            time_diff_seconds = (scheduled_time - now).total_seconds()
+            days = time_diff_seconds // (24 * 3600)
+            hours = (time_diff_seconds % (24 * 3600)) // 3600
+            minutes = (time_diff_seconds % 3600) // 60
+            seconds = time_diff_seconds % 60
+            
+            print(f"Current time: {now.isoformat()}")
+            print(f"Scheduled for: {scheduled_time.isoformat()}")
+            print(f"Time difference: {days:.0f} days, {hours:.0f} hours, {minutes:.0f} minutes, {seconds:.0f} seconds")
+            
+            # Add to Redis with exact timestamp
             task_id = f"campaign:{campaign_id}"
             redis_client.zadd("scheduled_campaigns", {task_id: schedule_time_ts})
             
