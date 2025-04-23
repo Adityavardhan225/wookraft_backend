@@ -104,6 +104,31 @@ async def create_email_campaign(
                 detail="Email template not found"
             )
         
+
+        schedule_time = None
+        if "schedule_time" in campaign_data and campaign_data["schedule_time"]:
+            # Parse the ISO format string to datetime
+            local_time = datetime.fromisoformat(campaign_data["schedule_time"])
+            
+            # Store original timezone info for logging
+            original_tz = local_time.tzinfo
+            
+            # Ensure it's UTC - if naive (no timezone), assume it's in local time and convert
+            if local_time.tzinfo is None:
+                # Get current UTC offset
+                utc_now = datetime.utcnow()
+                local_now = datetime.now()
+                utc_offset = (local_now - utc_now).total_seconds()
+                
+                # Convert to UTC by subtracting the offset
+                schedule_time = local_time - timedelta(seconds=utc_offset)
+                print(f"[DEBUG] Converted local time {local_time} to UTC {schedule_time}")
+            else:
+                # Already has timezone, convert to UTC
+                schedule_time = local_time.astimezone(timezone.utc).replace(tzinfo=None)
+                print(f"[DEBUG] Converted {original_tz} time to UTC: {schedule_time}")
+        
+        
         # Create campaign document
         campaign = {
             "name": campaign_data["name"],
@@ -112,9 +137,8 @@ async def create_email_campaign(
             "segment_ids": campaign_data.get("segment_ids", []),
             "custom_filters": campaign_data.get("custom_filters", []),
             "operator": campaign_data.get("operator", "AND"),
-            "schedule_time": datetime.fromisoformat(campaign_data["schedule_time"]) 
-    if "schedule_time" in campaign_data and campaign_data["schedule_time"] is not None 
-    else None,
+            "schedule_time": schedule_time, 
+    
             "status": "draft",
             "created_by": current_user.id if hasattr(current_user, "id") else "",
             "created_at": datetime.now(),
@@ -542,19 +566,14 @@ async def send_campaign(
             print(f"[DEBUG] Scheduled for: {scheduled_time.isoformat()}")
             print(f"[DEBUG] Current system time: {now.isoformat()}")
             
-            # Calculate system clock offset (how much system time differs from MongoDB time)
-            time_offset = (now - created_at).total_seconds()
-            print(f"[DEBUG] System clock offset: {time_offset:.1f} seconds")
+        
             
-            # Apply offset to scheduled time to get correct UTC time
-            # If system is ahead (future year), offset is positive, so we subtract
-            corrected_time = scheduled_time - timedelta(seconds=time_offset)
-            execute_at_ts = int(corrected_time.timestamp())
+            execute_at_ts = int(scheduled_time.timestamp())
+
+            # For user display, convert UTC time to local time approximation
+            local_time_offset = (datetime.now() - datetime.now()).total_seconds()
+            execute_at_local_time = scheduled_time + timedelta(seconds=local_time_offset)
             
-            # For user display, show when it will execute according to system time
-            execute_at_system_time = datetime.fromtimestamp(execute_at_ts + time_offset)
-            
-            # Calculate human-readable delay
             delay_seconds = (scheduled_time - now).total_seconds()
             delay_days = delay_seconds // (24 * 3600)
             delay_hours = (delay_seconds % (24 * 3600)) // 3600
@@ -562,10 +581,9 @@ async def send_campaign(
             delay_secs = delay_seconds % 60
             
             # Debug logs
-            print(f"[DEBUG] System time offset: {time_offset:.1f} seconds")
-            print(f"[DEBUG] Corrected execution time: {corrected_time.isoformat()}")
-            print(f"[DEBUG] Redis timestamp: {execute_at_ts} ({datetime.fromtimestamp(execute_at_ts).isoformat()})")
-            print(f"[DEBUG] Will execute at (system time): {execute_at_system_time.isoformat()}")
+            print(f"[DEBUG] UTC execution time: {scheduled_time.isoformat()}")
+            print(f"[DEBUG] Redis timestamp: {execute_at_ts} ({datetime.utcfromtimestamp(execute_at_ts).isoformat()})")
+            print(f"[DEBUG] Approximate local execution time: {execute_at_local_time.isoformat()}")
             print(f"[DEBUG] Relative delay: {delay_days:.0f}d {delay_hours:.0f}h {delay_minutes:.0f}m {delay_secs:.0f}s")
             
             # Store in Redis with corrected timestamp
@@ -573,7 +591,7 @@ async def send_campaign(
             redis_client.zadd("scheduled_campaigns", {task_id: execute_at_ts})
             
             # Return with friendly format for the user
-            friendly_time = execute_at_system_time.strftime("%B %d, %Y at %I:%M %p")
+            friendly_time = execute_at_local_time.strftime("%B %d, %Y at %I:%M %p")
             return {
                 "status": "success",
                 "message": f"Campaign scheduled for {friendly_time}",
