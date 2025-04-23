@@ -32,11 +32,11 @@ logger = logging.getLogger(__name__)
 # Use REDIS_URL for deployment
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
-try:
-    from routes.campaign.sending_campaign.services.campaign_tasks import celery_app
-except ImportError:
-    # Create a backup app if import fails
-    celery_app = Celery('woopos', broker=REDIS_URL, backend=REDIS_URL)
+# try:
+#     from routes.campaign.sending_campaign.services.campaign_tasks import celery_app
+# except ImportError:
+#     # Create a backup app if import fails
+#     celery_app = Celery('woopos', broker=REDIS_URL, backend=REDIS_URL)
 
 # Log configuration
 logger.info(f"Celery configured with broker: {REDIS_URL}")

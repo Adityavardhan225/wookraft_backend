@@ -8,7 +8,7 @@ from bson import ObjectId
 import time
 from celery import Celery
 import os
-# from routes.campaign.sending_campaign.services.celery_app import celery_app
+from routes.campaign.sending_campaign.services.celery_app import celery_app
 from routes.campaign.sending_campaign.services.email_service import email_service
 from configurations.config import client
 from routes.campaign.customer_segment_services import get_customers_for_combined_criteria
@@ -27,24 +27,25 @@ from redis import Redis
 #     REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
 
 # Use REDIS_URL for deployment
-REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
-# Create Celery app directly in tasks file
-celery_app = Celery(
-    'woopos', 
-    broker=REDIS_URL,
-    backend=REDIS_URL
-)
+# REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
-import ssl 
+# # Create Celery app directly in tasks file
+# celery_app = Celery(
+#     'woopos', 
+#     broker=REDIS_URL,
+#     backend=REDIS_URL
+# )
 
-if REDIS_URL.startswith("rediss://"):
-    celery_app.conf.broker_use_ssl = {
-        "ssl_cert_reqs": ssl.CERT_NONE
-    }
-    celery_app.conf.redis_backend_use_ssl = {
-        "ssl_cert_reqs": ssl.CERT_NONE
-    }
+# import ssl 
+
+# if REDIS_URL.startswith("rediss://"):
+#     celery_app.conf.broker_use_ssl = {
+#         "ssl_cert_reqs": ssl.CERT_NONE
+#     }
+#     celery_app.conf.redis_backend_use_ssl = {
+#         "ssl_cert_reqs": ssl.CERT_NONE
+#     }
 
 # Setup logging
 logging.basicConfig(
@@ -83,7 +84,7 @@ EMAIL_QUEUE = 'email_campaigns_queue'
 SCHEDULED_CAMPAIGNS = 'scheduled_campaigns'
 
 
-@celery_app.task(name="send_campaign_email")
+@celery_app.task(name="routes.campaign.sending_campaign.services.campaign_tasks.send_campaign_email")
 def send_campaign_email(
     to_email: str,
     to_name: str,
@@ -141,7 +142,7 @@ def send_campaign_email(
         # Clean up the event loop
         loop.close()
 
-@celery_app.task(name="send_campaign_batch")
+@celery_app.task(name="routes.campaign.sending_campaign.services.campaign_tasks.send_campaign_batch")
 def send_campaign_batch(
     recipients: List[Dict[str, Any]],
     subject: str,
