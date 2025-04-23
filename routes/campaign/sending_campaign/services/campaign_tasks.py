@@ -116,7 +116,7 @@ def send_campaign_email(
     
     try:
         # Run email service send method
-        result = loop.run_until_complete(
+        result = asyncio.run(
             email_service.send_email(
                 to_email=to_email,
                 to_name=to_name,
@@ -214,7 +214,7 @@ def send_campaign_batch(
         # Clean up the event loop
         loop.close()
 
-@celery_app.task(name="process_campaign")
+@celery_app.task(name="routes.campaign.sending_campaign.services.campaign_tasks.process_campaign")
 def process_campaign(campaign_id: str) -> Dict[str, Any]:
     """
     Process a campaign by retrieving recipients and sending in batches
@@ -401,15 +401,7 @@ def check_scheduled_campaigns() -> Dict[str, Any]:
         redis_client.ping()
         logger.info("Redis connection successful")
         # Test Redis connection
-        try:
-            redis_client.ping()
-            print("Redis connection successful")
-        except Exception as redis_error:
-            logger.error(f"Failed to connect to Redis: {str(redis_error)}")
-            return {
-                "success": False,
-                "message": f"Redis connection error: {str(redis_error)}"
-            }
+        
         
         # Current timestamp
         now = int(datetime.now().timestamp())
@@ -417,7 +409,7 @@ def check_scheduled_campaigns() -> Dict[str, Any]:
         
         # Log all campaigns in Redis
         all_campaigns = redis_client.zrange("scheduled_campaigns", 0, -1, withscores=True)
-        print(f"All scheduled campaigns in Redis: {[(key.decode(), score) for key, score in all_campaigns]}")
+        print(f"All scheduled campaigns in Redis: {all_campaigns}")
         
         # Get due campaigns from Redis sorted set
         due_campaigns = redis_client.zrangebyscore("scheduled_campaigns", 0, now)
@@ -428,7 +420,7 @@ def check_scheduled_campaigns() -> Dict[str, Any]:
         # Process each due campaign
         for campaign_key in due_campaigns:
             try:
-                campaign_id = campaign_key.decode().split(":")[-1]
+                campaign_id = campaign_key.split(":")[-1]
                 print(f"Processing campaign {campaign_id}")
                 
                 # Queue campaign processing
@@ -521,7 +513,7 @@ def process_campaign_queue() -> Dict[str, Any]:
             "message": f"Failed to process campaign queue: {str(e)}"
         }
 
-@celery_app.task(name="check_campaign_completion")
+@celery_app.task(name="routes.campaign.sending_campaign.services.campaign_tasks.check_campaign_completion")
 def check_campaign_completion() -> Dict[str, Any]:
     """
     Check for campaigns that should be marked as completed
