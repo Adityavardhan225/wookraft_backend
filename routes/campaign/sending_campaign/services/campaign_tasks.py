@@ -53,13 +53,15 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-def get_redis_client() -> Redis:
-    return Redis.from_url(
-        REDIS_URL,
-        decode_responses=True,
-        health_check_interval=10,
-        ssl_cert_reqs=None if REDIS_URL.startswith("rediss://") else None
-    )
+redis_client = celery_app() 
+
+# def get_redis_client() -> Redis:
+#     return Redis.from_url(
+#         REDIS_URL,
+#         decode_responses=True,
+#         health_check_interval=10,
+#         ssl_cert_reqs=None if REDIS_URL.startswith("rediss://") else None
+#     )
 
 # Add this to your campaign_tasks.py
 celery_app.conf.beat_schedule = {

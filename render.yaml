@@ -13,7 +13,7 @@ services:
     env: python
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: celery -A routes.campaign.sending_campaign.services.campaign_tasks worker --loglevel=info --pool=solo
+    startCommand: celery -A routes.campaign.sending_campaign.services.celery_app worker --loglevel=info --pool=solo -Q campaigns,emails,scheduler
     envVars:
       - key: REDIS_URL
         sync: false
@@ -23,7 +23,7 @@ services:
     env: python
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: celery -A routes.campaign.sending_campaign.services.campaign_tasks beat --loglevel=info
+    startCommand: celery -A routes.campaign.sending_campaign.services.celery_app beat --loglevel=info
     envVars:
       - key: REDIS_URL
         sync: false

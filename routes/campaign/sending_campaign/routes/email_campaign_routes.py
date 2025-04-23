@@ -381,6 +381,13 @@ async def send_campaign(
             # Add to scheduled tasks in Redis
             schedule_time_ts = int(campaign["schedule_time"].timestamp())
             dt_local = datetime.fromtimestamp(schedule_time_ts)
+            current_time = int(datetime.now().timestamp())
+            time_diff = schedule_time_ts - current_time
+
+            # Debug logging
+            print(f"Current time: {datetime.now().isoformat()}")
+            print(f"Schedule time: {campaign['schedule_time'].isoformat()}")
+            print(f"Time difference: {time_diff} seconds")
             print(f"Scheduling campaign {campaign_id} for {campaign['schedule_time']} (timestamp: {schedule_time_ts} (date and time : {dt_local}))")
             task_id = f"campaign:{campaign_id}"
             redis_client.zadd("scheduled_campaigns", {task_id: schedule_time_ts})
