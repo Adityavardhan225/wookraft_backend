@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Body, Query, Path, BackgroundTasks, Form
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 import asyncio
 from routes.security.protected_authorise import get_current_user
@@ -398,9 +398,17 @@ async def send_campaign(
             # Add this to your send_campaign function where scheduling happens
 
             # Fix for year/timestamp issue - normalize to current system time
-            scheduled_time = campaign["schedule_time"]
+            # scheduled_time = campaign["schedule_time"]
+            # schedule_time_ts = int(scheduled_time.timestamp())
+
+            now = datetime.now(timezone.utc)
+
+            # Convert schedule time to UTC if it isn't already
+            scheduled_time = campaign["schedule_time"].replace(tzinfo=timezone.utc)
+
+            # Use UTC timestamps for Redis
             schedule_time_ts = int(scheduled_time.timestamp())
-            
+                        
             # Debug logging
             now = datetime.now()
             time_diff_seconds = (scheduled_time - now).total_seconds()
