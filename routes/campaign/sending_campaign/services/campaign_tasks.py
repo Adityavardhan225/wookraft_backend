@@ -74,14 +74,13 @@ logger = logging.getLogger(__name__)
 #     )
 
 
-
 def get_redis_client() -> Redis:
     """Get Redis client with proper configuration."""
-    REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-    
     import ssl
-    # Common parameters for all connections
-    common_params = {
+    REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+
+    # Common parameters
+    params = {
         'decode_responses': True,
         'health_check_interval': 10,
         'socket_connect_timeout': 5,
@@ -89,17 +88,12 @@ def get_redis_client() -> Redis:
         'socket_keepalive': True,
     }
     
-    # Check if the URL starts with "rediss://" for SSL
+    # Add SSL parameters if using secure Redis
     if REDIS_URL.startswith("rediss://"):
-        try:
-            # Try newer Redis client syntax
-            return Redis.from_url(REDIS_URL, **common_params, ssl=True)
-        except TypeError:
-            # Fall back to older Redis client syntax
-            common_params['ssl_cert_reqs'] = ssl.CERT_NONE
-            return Redis.from_url(REDIS_URL, **common_params)
-    else:
-        return Redis.from_url(REDIS_URL, **common_params)
+        params['ssl_cert_reqs'] = ssl.CERT_NONE
+    
+    return Redis.from_url(REDIS_URL, **params)
+
 # Add this to your campaign_tasks.py
 
 
