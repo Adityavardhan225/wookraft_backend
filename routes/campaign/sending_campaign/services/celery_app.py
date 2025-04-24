@@ -49,14 +49,6 @@ celery_app = Celery(
 
 
 
-import ssl
-if REDIS_URL.startswith("rediss://"):
-    celery_app.conf.broker_use_ssl = {
-        "ssl_cert_reqs": ssl.CERT_NONE  # Disable certificate validation
-    }
-    celery_app.conf.redis_backend_use_ssl = {
-        "ssl_cert_reqs": ssl.CERT_NONE  # Disable certificate validation
-    }
 
 # Load task modules
 celery_app.conf.imports = [

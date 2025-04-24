@@ -78,28 +78,17 @@ def get_redis_client() -> Redis:
     """Get Redis client with proper configuration."""
     REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
-    # Check if the URL starts with "rediss://" for SSL
-    if REDIS_URL.startswith("rediss://"):
-        return Redis.from_url(
-            REDIS_URL,
-            decode_responses=True,
-            health_check_interval=10,
-            socket_connect_timeout=5,
-            retry_on_timeout=True,
-            socket_keepalive=True,
-            ssl=True  # Use `ssl=True` instead of `ssl_cert_reqs`
-        )
-    else:
-        return Redis.from_url(
-            REDIS_URL,
-            decode_responses=True,
-            health_check_interval=10,
-            socket_connect_timeout=5,
-            retry_on_timeout=True,
-            socket_keepalive=True
-        )
+    # Configure Redis client without SSL
+    return Redis.from_url(
+        REDIS_URL,
+        decode_responses=True,
+        health_check_interval=10,  # Check connection health every 10 seconds
+        socket_connect_timeout=5,  # Timeout for connecting to the server (in seconds)
+        retry_on_timeout=True,     # Retry if a timeout occurs
+        socket_keepalive=True      # Keep the connection alive
+    )
     
-    
+
 # Add this to your campaign_tasks.py
 celery_app.conf.beat_schedule = {
     'check-scheduled-campaigns': {
