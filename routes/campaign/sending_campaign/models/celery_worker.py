@@ -3,7 +3,6 @@ from routes.campaign.sending_campaign.services import celery_app
 import logging
 import sys
 from dotenv import load_dotenv
-import redis
 
 # Load environment variables
 load_dotenv()
@@ -22,10 +21,16 @@ logging.basicConfig(
 os.makedirs(os.path.join(os.path.dirname(__file__), 'logs'), exist_ok=True)
 
 logger = logging.getLogger('celery_worker')
-
+import ssl
 
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-REDIS_CLIENT = redis.Redis.from_url(REDIS_URL)
+if REDIS_URL.startswith("rediss://"):
+    celery_app.conf.broker_use_ssl = {
+        "ssl_cert_reqs": ssl.CERT_NONE
+    }
+    celery_app.conf.redis_backend_use_ssl = {
+        "ssl_cert_reqs": ssl.CERT_NONE
+    }
 
 # Make sure all task modules are imported so tasks are registered with Celery
 import routes.campaign.sending_campaign.services.campaign_tasks

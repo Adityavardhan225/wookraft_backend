@@ -64,7 +64,7 @@ redis_client = redis.Redis.from_url(
     retry_on_timeout=True,     # Retry if a timeout occurs
     socket_keepalive=True,    # Keep the connection 
     decode_responses=True,
-      # Disable SSL validation for rediss://
+    ssl_cert_reqs=None if REDIS_URL.startswith("rediss://") else None  # Disable SSL validation for rediss://
 )
 
 # Test Redis connection during startup
