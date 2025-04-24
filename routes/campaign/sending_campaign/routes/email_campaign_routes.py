@@ -132,7 +132,7 @@ async def create_email_campaign(
             
             # Localize and convert to UTC
             localized_time = local_tz.localize(user_time)
-            schedule_time = localized_time.astimezone(pytz.utc)
+            schedule_time = localized_time.astimezone(pytz.utc).replace(tzinfo=None)
 
             print(f"[DEBUG] User's time: {user_time}, Localized: {localized_time}, Converted to UTC: {schedule_time}")
 
@@ -149,8 +149,8 @@ async def create_email_campaign(
     
             "status": "draft",
             "created_by": current_user.id if hasattr(current_user, "id") else "",
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc),
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
             "statistics": {
                 "total_recipients": 0,
                 "sent": 0,
@@ -298,7 +298,7 @@ async def update_email_campaign(
         
         # Prepare update data
         update_data = {k: v for k, v in campaign_data.items() if k not in ["_id", "created_at", "status", "statistics"]}
-        update_data["updated_at"] = datetime.now(timezone.utc)
+        update_data["updated_at"] = datetime.now()
         
         # Convert schedule_time from string to datetime
         if "schedule_time" in update_data and update_data["schedule_time"]:
@@ -558,17 +558,17 @@ async def send_campaign(
             campaign = campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         
         # Schedule for future or send now
-        if campaign.get("schedule_time") and campaign["schedule_time"] > datetime.now(timezone.utc):
+        if campaign.get("schedule_time") and campaign["schedule_time"] > datetime.now():
             # Set status to scheduled
             campaigns_collection.update_one(
                 {"_id": ObjectId(campaign_id)},
-                {"$set": {"status": "scheduled", "scheduled_at": datetime.now(timezone.utc)}}
+                {"$set": {"status": "scheduled", "scheduled_at": datetime.now()}}
             )
             
             # Get time references
             created_at = campaign["created_at"]
             scheduled_time = campaign["schedule_time"]
-            now = datetime.now(timezone.utc)
+            now = datetime.now()
             
             print(f"[DEBUG] Campaign created at: {created_at.isoformat()}")
             print(f"[DEBUG] Scheduled for: {scheduled_time.isoformat()}")
@@ -579,7 +579,7 @@ async def send_campaign(
             execute_at_ts = int(scheduled_time.timestamp())
 
             # For user display, convert UTC time to local time approximation
-            local_time_offset = (datetime.now(timezone.utc) - datetime.now(timezone.utc)).total_seconds()
+            local_time_offset = (datetime.now() - datetime.now()).total_seconds()
             execute_at_local_time = scheduled_time + timedelta(seconds=local_time_offset)
             
             delay_seconds = (scheduled_time - now).total_seconds()
@@ -589,7 +589,7 @@ async def send_campaign(
             delay_secs = delay_seconds % 60
             
             # Debug logs
-            print(f"[DEBUG] UTC execution time: {scheduled_time.isoformat()}, schedule_time:{scheduled_time}, scheduletime_ts:{scheduled_time.timestamp()}")
+            print(f"[DEBUG] UTC execution time: {scheduled_time.isoformat()},fdssdf {scheduled_time.timestamp()} dasds{scheduled_time}")
             print(f"[DEBUG] Redis timestamp: {execute_at_ts} ({datetime.utcfromtimestamp(execute_at_ts).isoformat()})")
             print(f"[DEBUG] Approximate local execution time: {execute_at_local_time.isoformat()}")
             print(f"[DEBUG] Relative delay: {delay_days:.0f}d {delay_hours:.0f}h {delay_minutes:.0f}m {delay_secs:.0f}s")
@@ -610,7 +610,7 @@ async def send_campaign(
             print(f"[DEBUG] Processing campaign immediately")
             campaigns_collection.update_one(
                 {"_id": ObjectId(campaign_id)},
-                {"$set": {"status": "processing", "started_at": datetime.now(timezone.utc)}}
+                {"$set": {"status": "processing", "started_at": datetime.now()}}
             )
             
             # Queue the campaign for processing
@@ -820,7 +820,7 @@ async def send_single_email(
             "template_id": str(template["_id"]),
             "variables": variables,
             "status": "sent",
-            "sent_at": datetime.now(timezone.utc)
+            "sent_at": datetime.now()
         })
         
         return {
@@ -838,7 +838,7 @@ async def send_single_email(
             "variables": variables,
             "status": "failed",
             "error": str(e),
-            "sent_at": datetime.now(timezone.utc)
+            "sent_at": datetime.now()
         })
         
         return {
@@ -883,7 +883,7 @@ async def process_campaign_queue():
                         {"$set": {
                             "status": "failed",
                             "error": "Recipient list not found or empty",
-                            "failed_at": datetime.now(timezone.utc)
+                            "failed_at": datetime.now()
                         }}
                     )
                     continue
@@ -972,7 +972,7 @@ async def process_campaign_queue():
                 {"_id": ObjectId(campaign_id)},
                 {"$set": {
                     "status": "completed",
-                    "completed_at": datetime.now(timezone.utc)
+                    "completed_at": datetime.now()
                 }}
             )
             
@@ -983,7 +983,7 @@ async def process_campaign_queue():
                 {"$set": {
                     "status": "failed",
                     "error": str(e),
-                    "failed_at": datetime.now(timezone.utc)
+                    "failed_at": datetime.now()
                 }}
             )
 
@@ -1093,8 +1093,8 @@ async def upload_recipient_list(
             "recipients": recipients,
             "total_recipients": len(recipients),
             "created_by": current_user.id,
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc)
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
         }
         
         result = recipient_lists_collection.insert_one(new_list)
