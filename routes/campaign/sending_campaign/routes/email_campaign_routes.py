@@ -132,7 +132,7 @@ async def create_email_campaign(
             
             # Localize and convert to UTC
             localized_time = local_tz.localize(user_time)
-            schedule_time = localized_time.astimezone(pytz.utc).replace(tzinfo=None)
+            schedule_time = localized_time.astimezone(pytz.utc)
 
             print(f"[DEBUG] User's time: {user_time}, Localized: {localized_time}, Converted to UTC: {schedule_time}")
 
