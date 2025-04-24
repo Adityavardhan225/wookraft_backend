@@ -397,7 +397,8 @@ def process_campaign(campaign_id: str) -> Dict[str, Any]:
 @celery_app.task(name="routes.campaign.sending_campaign.services.campaign_tasks.check_scheduled_campaigns")
 def check_scheduled_campaigns() -> Dict[str, Any]:
     """Check for campaigns scheduled to run now"""
-    logger.info("Checking for scheduled campaigns")
+    print("CRITICAL: Starting check_scheduled_campaigns task")
+    logger.critical("Starting check_scheduled_campaigns task")
     
     try:
         # Get Redis connection
@@ -409,8 +410,14 @@ def check_scheduled_campaigns() -> Dict[str, Any]:
         #     password=os.getenv('REDIS_PASSWORD')
         # )
         redis_client = get_redis_client()
-        redis_client.ping()
-        logger.info("Redis connection successful")
+        try:
+            redis_client.ping()
+            print("CRITICAL: Redis connection successful")
+            logger.critical("Redis connection successful")
+        except Exception as redis_err:
+            print(f"CRITICAL: Redis ping failed: {str(redis_err)}")
+            logger.critical(f"Redis ping failed: {str(redis_err)}")
+            raise
         # Test Redis connection
         
         
@@ -419,8 +426,12 @@ def check_scheduled_campaigns() -> Dict[str, Any]:
         print(f"Current timestamp: {now} ({datetime.fromtimestamp(now)})")
         
         # Log all campaigns in Redis
-        all_campaigns = redis_client.zrange("scheduled_campaigns", 0, -1, withscores=True)
-        print(f"All scheduled campaigns in Redis: {all_campaigns}")
+        try:
+            all_campaigns = redis_client.zrange("scheduled_campaigns", 0, -1, withscores=True)
+            print(f"CRITICAL: All scheduled campaigns in Redis: {all_campaigns}")
+        except Exception as e:
+            print(f"CRITICAL: Error getting campaigns from Redis: {str(e)}")
+            logger.critical(f"Error getting campaigns from Redis: {str(e)}")
         
         # Get due campaigns from Redis sorted set
         due_campaigns = redis_client.zrangebyscore("scheduled_campaigns", 0, now)
