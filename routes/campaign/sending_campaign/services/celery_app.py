@@ -111,6 +111,10 @@ celery_app.conf.task_routes = {
     'routes.campaign.sending_campaign.services.campaign_tasks.process_campaign': {'queue': 'campaigns'},
 }
 
+discovered_tasks = list(celery_app.tasks.keys())
+logger.critical(f"Discovered tasks: {discovered_tasks}")
+
+
 # Log Celery configuration
 logger.info(f"Celery configured with broker: {REDIS_URL}")
 logger.info(f"Available task queues: {list(celery_app.conf.task_routes.keys())}")

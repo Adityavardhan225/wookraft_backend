@@ -100,16 +100,7 @@ def get_redis_client() -> Redis:
             socket_keepalive=True
         )
 # Add this to your campaign_tasks.py
-celery_app.conf.beat_schedule = {
-    'check-scheduled-campaigns': {
-        'task':'routes.campaign.sending_campaign.services.campaign_tasks.check_scheduled_campaigns',
-        'schedule': 60.0,  # Run every 60 seconds
-    },
-    'process-campaign-queue': {
-        'task': 'routes.campaign.sending_campaign.services.campaign_tasks.process_campaign_queue',
-        'schedule': 30.0,  # Run every 30 seconds
-    },
-}
+
 
 # Database collections
 db = client["wookraft_db"]
