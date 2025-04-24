@@ -6,44 +6,22 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port 8000
 
- 
-
-  - name: celery-worker-campaign
+  - name: celery-campaign-combined
     type: worker
     env: python
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: celery -A routes.campaign.sending_campaign.services.campaign_tasks worker -l info --pool=solo
+    startCommand: celery -A routes.campaign.sending_campaign.services.campaign_tasks worker --beat --loglevel=info --pool=solo
     envVars:
       - key: REDIS_URL
         sync: false
 
-  - name: celery-beat-campaign
+  - name: celery-discount-combined
     type: worker
     env: python
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: celery -A routes.campaign.sending_campaign.services.campaign_tasks beat -l info
-    envVars:
-      - key: REDIS_URL
-        sync: false
-
-  - name: celery-worker-discount
-    type: worker
-    env: python
-    region: oregon
-    buildCommand: pip install -r requirements.txt
-    startCommand: celery -A routes.admin_function.discount_calculation worker --loglevel=info --pool=solo
-    envVars:
-      - key: REDIS_URL
-        sync: false
-
-  - name: celery-beat-discount
-    type: worker
-    env: python
-    region: oregon
-    buildCommand: pip install -r requirements.txt
-    startCommand: celery -A routes.admin_function.discount_calculation beat --loglevel=info
+    startCommand: celery -A routes.admin_function.discount_calculation worker --beat --loglevel=info --pool=solo
     envVars:
       - key: REDIS_URL
         sync: false
