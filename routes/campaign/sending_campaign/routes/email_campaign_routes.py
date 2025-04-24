@@ -596,7 +596,7 @@ async def send_campaign(
             
             # Store in Redis with corrected timestamp
             task_id = f"campaign:{campaign_id}"
-            redis_client.zadd("scheduled_campaigns", {task_id: scheduled_time.timestamp()})
+            redis_client.zadd("scheduled_campaigns", {task_id: execute_at_ts})
             
             # Return with friendly format for the user
             friendly_time = execute_at_local_time.strftime("%B %d, %Y at %I:%M %p")
