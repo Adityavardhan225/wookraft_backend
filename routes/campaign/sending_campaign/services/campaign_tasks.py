@@ -13,6 +13,7 @@ from routes.campaign.sending_campaign.services.email_service import email_servic
 from configurations.config import client
 from routes.campaign.customer_segment_services import get_customers_for_combined_criteria
 from redis import Redis
+from asgiref.sync import async_to_sync
 
 
 # REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
@@ -148,36 +149,29 @@ def send_campaign_email(
     """
     logger.info(f"Sending campaign email to {to_email}")
     
-    # Create event loop for async operations
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+
     
-    try:
+    
         # Run email service send method
-        result = asyncio.run(
-            email_service.send_email(
-                to_email=to_email,
-                to_name=to_name,
-                subject=subject,
-                template_id=template_id,
-                variables=variables,
-                campaign_id=campaign_id,
-                tracking_enabled=tracking_enabled
-            )
+    result = async_to_sync(email_service.send_email)(
+            to_email=to_email,
+            to_name=to_name,
+            subject=subject,
+            template_id=template_id,
+            variables=variables,
+            campaign_id=campaign_id,
+            tracking_enabled=tracking_enabled
         )
-        
         # Update campaign statistics
-        status_field = "statistics.sent" if result.get("success") else "statistics.failed"
-        campaigns_collection.update_one(
+    status_field = "statistics.sent" if result.get("success") else "statistics.failed"
+    campaigns_collection.update_one(
             {"_id": ObjectId(campaign_id)},
             {"$inc": {status_field: 1}}
         )
         
-        return result
+    return result
         
-    finally:
-        # Clean up the event loop
-        loop.close()
+
 
 @celery_app.task(name="routes.campaign.sending_campaign.services.campaign_tasks.send_campaign_batch")
 def send_campaign_batch(
@@ -187,70 +181,46 @@ def send_campaign_batch(
     campaign_id: str,
     batch_index: int
 ) -> Dict[str, Any]:
-    """
-    Send a batch of campaign emails
-    
-    Args:
-        recipients: List of recipient data
-        subject: Email subject
-        template_id: Template ID
-        campaign_id: Campaign ID
-        batch_index: Batch index for tracking
-        
-    Returns:
-        Batch send result
-    """
+    """Send a batch of campaign emails"""
     logger.info(f"Processing batch {batch_index} with {len(recipients)} recipients")
+    print(f"DEBUG: Processing batch {batch_index} with {len(recipients)} recipients")
     start_time = time.time()
     
-    # Create event loop for async operations
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    # Use async_to_sync
+    result = async_to_sync(email_service.send_batch_emails)(
+        recipients=recipients,
+        subject=subject,
+        template_id=template_id,
+        campaign_id=campaign_id
+    )
     
-    try:
-        # Run email service batch send method
-        result = loop.run_until_complete(
-            email_service.send_batch_emails(
-                recipients=recipients,
-                subject=subject,
-                template_id=template_id,
-                campaign_id=campaign_id
-            )
-        )
-        
-        # Calculate duration
-        duration = time.time() - start_time
-        
-        # Update campaign batch stats
-        campaigns_collection.update_one(
-            {"_id": ObjectId(campaign_id)},
-            {
-                "$push": {
-                    "batches": {
-                        "batch_index": batch_index,
-                        "total": len(recipients),
-                        "sent": result.get("sent_count", 0),
-                        "failed": result.get("failed_count", 0),
-                        "duration_seconds": duration,
-                        "completed_at": datetime.now()
-                    }
+    # Calculate duration
+    duration = time.time() - start_time
+    
+    # Update campaign batch stats
+    campaigns_collection.update_one(
+        {"_id": ObjectId(campaign_id)},
+        {
+            "$push": {
+                "batches": {
+                    "batch_index": batch_index,
+                    "total": len(recipients),
+                    "sent": result.get("sent_count", 0),
+                    "failed": result.get("failed_count", 0),
+                    "duration_seconds": duration,
+                    "completed_at": datetime.now()
                 }
             }
-        )
-        
-        logger.info(f"Batch {batch_index} completed in {duration:.2f}s: {result.get('sent_count', 0)} sent, {result.get('failed_count', 0)} failed")
-        
-        return {
-            "success": result.get("success", False),
-            "batch_index": batch_index,
-            "sent_count": result.get("sent_count", 0),
-            "failed_count": result.get("failed_count", 0),
-            "duration_seconds": duration
         }
-        
-    finally:
-        # Clean up the event loop
-        loop.close()
+    )
+    
+    return {
+        "success": result.get("success", False),
+        "batch_index": batch_index,
+        "sent_count": result.get("sent_count", 0),
+        "failed_count": result.get("failed_count", 0),
+        "duration_seconds": duration
+    }
 
 @celery_app.task(name="routes.campaign.sending_campaign.services.campaign_tasks.process_campaign")
 def process_campaign(campaign_id: str) -> Dict[str, Any]:
