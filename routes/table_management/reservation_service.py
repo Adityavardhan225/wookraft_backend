@@ -217,6 +217,12 @@ class ReservationService:
                     now = datetime.now()
                     reservation_time = reservation_data["reservation_date"]
                     
+                    if reservation_time.tzinfo is not None:
+                # Use timezone-aware now
+                        now = datetime.now(reservation_time.tzinfo)
+                    else:
+                # Use naive datetime for consistency
+                        now = datetime.now()
                     # Only set status to RESERVED if reservation is within 30 minutes
                     status = TableStatus.RESERVED if (reservation_time - now).total_seconds() <= 1800 else TableStatus.VACANT
                     
