@@ -216,39 +216,58 @@ class ReservationService:
         result = self.db.reservations.insert_one(reservation_data)
         print(f"Reservation ID: {result.inserted_id}")
         # Update tables with reservation information if tables assigned
+# Update tables with reservation information if tables assigned
         if "table_ids" in reservation_data and reservation_data["table_ids"]:
+            print(f"Updating {len(reservation_data['table_ids'])} tables...")
             for table_id in reservation_data["table_ids"]:
+                print(f"Updating table {table_id}")
                 try:
+                    print(f"Table ID: {table_id}")
+                    # First verify the table exists
+                    table = self.db.tables.find_one({"_id": ObjectId(table_id)})
+                    if not table:
+                        print(f"ERROR: Table with ID {table_id} not found in database")
+                        continue
+                        
+                    print(f"Updating table {table_id}, current data: {table}")
+                        
                     # CHANGE: Store upcoming reservation time rather than immediately setting to RESERVED
                     now = datetime.now()
                     reservation_time = reservation_data["reservation_date"]
-                    print(1234567, reservation_time, reservation_time.tzinfo)
+                    
                     if reservation_time.tzinfo is not None:
-                # Use timezone-aware now
                         now = datetime.now(reservation_time.tzinfo)
-                        print(1234567832, now, now.tzinfo)
                     else:
-
-                # Use naive datetime for consistency
                         now = datetime.now()
-                    print(123456700, now, now.tzinfo)
-                    # Only set status to RESERVED if reservation is within 30 minutes
+                        
                     status = TableStatus.RESERVED if (reservation_time - now).total_seconds() <= 1800 else TableStatus.VACANT
-                    print(1234567822, status)
-                    self.db.tables.update_one(
+                    
+                    # Create update data
+                    update_data = {
+                        "upcoming_reservation_time": reservation_time,
+                        "reserved_until": reservation_data["expected_end_time"],
+                        "reservation_id": str(result.inserted_id),
+                        "status": status,
+                        "updated_at": now
+                    }
+                    
+                    print(f"Update data for table {table_id}: {update_data}")
+                    
+                    # Execute update with result tracking
+                    update_result = self.db.tables.update_one(
                         {"_id": ObjectId(table_id)},
-                        {
-                            "$set": {
-                                "upcoming_reservation_time": reservation_time,  # Add this line
-                                "reserved_until": reservation_data["expected_end_time"],
-                                "reservation_id": str(result.inserted_id),  # Add this line
-                                "status": status,  # Conditionally set status
-                                "updated_at": datetime.now()
-                            }
-                        }
+                        {"$set": update_data}
                     )
+                    
+                    print(f"Update result: matched={update_result.matched_count}, modified={update_result.modified_count}")
+                    
+                    # Verify the update worked
+                    updated_table = self.db.tables.find_one({"_id": ObjectId(table_id)})
+                    print(f"Table after update: {updated_table}")
+                    
                 except Exception as e:
-                    logging.error(f"Error updating table {table_id} with reservation: {str(e)}")
+                    print(f"CRITICAL ERROR updating table {table_id}: {str(e)}")
+                    logging.error(f"Error updating table {table_id} with reservation: {str(e)}", exc_info=True)
         
         print(f"Reservation created with ID: {result.inserted_id}")       
         # Return the created reservation
