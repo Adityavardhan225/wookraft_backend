@@ -538,7 +538,7 @@ async def generate_bill_pdf(
         # Generate PDF using Playwright
         width_px = int(paper_width * 3.8)
         
-        pdf_data = await generate_pdf_with_wkhtmltopdf(
+        pdf_data = generate_pdf_with_wkhtmltopdf(
             html_content=full_html,
         )
         
