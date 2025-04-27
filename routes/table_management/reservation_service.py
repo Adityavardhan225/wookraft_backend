@@ -167,6 +167,8 @@ class ReservationService:
         reservation_data["reminder_sent"] = False
         reservation_data["reservation_code"] = self.generate_reservation_code()
         
+        reservation_data.setdefault("table_ids", [])
+        
         # Calculate expected end time based on duration
         duration = reservation_data.get("expected_duration_minutes", 90)
         reservation_date = reservation_data["reservation_date"]
