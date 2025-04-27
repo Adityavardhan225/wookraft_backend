@@ -5,7 +5,7 @@ services:
     region: oregon
     buildCommand: |
       pip install -r requirements.txt
-      playwright install
+      playwright install chromium
     startCommand: uvicorn main:app --host 0.0.0.0 --port 8000
 
  
@@ -16,7 +16,7 @@ services:
     region: oregon
     buildCommand: |
       pip install -r requirements.txt
-      playwright install
+      playwright install chromium
     startCommand: celery -A routes.campaign.sending_campaign.services.celery_app worker -l info --pool=solo -Q scheduler,emails,campaigns
     envVars:
       - key: REDIS_URL
@@ -28,7 +28,7 @@ services:
     region: oregon
     buildCommand: |
       pip install -r requirements.txt
-      playwright install
+      playwright install chromium
     startCommand: celery -A routes.campaign.sending_campaign.services.celery_app beat -l info
     envVars:
       - key: REDIS_URL
@@ -40,7 +40,7 @@ services:
     region: oregon
     buildCommand: |
       pip install -r requirements.txt
-      playwright install
+      playwright install chromium
     startCommand: celery -A routes.admin_function.discount_calculation worker --loglevel=info --pool=solo
     envVars:
       - key: REDIS_URL
@@ -52,7 +52,7 @@ services:
     region: oregon
     buildCommand: |
       pip install -r requirements.txt
-      playwright install
+      playwright install chromium
     startCommand: celery -A routes.admin_function.discount_calculation beat --loglevel=info
     envVars:
       - key: REDIS_URL
