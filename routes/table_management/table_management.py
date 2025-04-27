@@ -303,10 +303,15 @@ async def get_all_tables(
                 if table_id_str not in reserved_table_ids:
                     # Also check for upcoming reservation times
                     upcoming_time = table.get("upcoming_reservation_time")
-                    if upcoming_time and isinstance(upcoming_time, datetime):
-                        # If the table has a reservation starting during our needed window, it's not available
-                        if (upcoming_time >= date_obj and upcoming_time <= end_date) or (date_obj >= upcoming_time and date_obj <= table.get("reserved_until", upcoming_time)):
-                            continue
+                if upcoming_time and isinstance(upcoming_time, datetime):
+                    # First check if upcoming reservation starts during our needed window
+                    if upcoming_time >= date_obj and upcoming_time <= end_date:
+                        continue
+                        
+                    # Then check if our requested time is during an existing reservation
+                    reserved_until = table.get("reserved_until")
+                    if reserved_until is not None and date_obj >= upcoming_time and date_obj <= reserved_until:
+                        continue
                     tables.append(table)
         
         elif status:

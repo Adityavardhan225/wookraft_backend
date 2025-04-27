@@ -598,6 +598,15 @@ async def generate_bill_pdf(
             else:
                 logging.info(f"No customer email available for order {order_id}, skipping feedback email")
 
+            try:
+                    delete_result = db.orders.delete_one({"_id": ObjectId(order_id)})
+                    if delete_result.deleted_count > 0:
+                        logging.info(f"Order {order_id} successfully deleted from the orders collection after bill generation.")
+                    else:
+                        logging.warning(f"Order {order_id} not found in the orders collection.")
+            except Exception as delete_err:
+                    logging.error(f"Error deleting order {order_id} from the orders collection: {str(delete_err)}")
+
 
 
 

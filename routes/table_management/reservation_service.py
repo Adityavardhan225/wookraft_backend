@@ -84,22 +84,20 @@ class ReservationService:
             if table_id_str not in reserved_table_ids:
                 # Also check if any tables are currently occupied
                 upcoming_time = table.get("upcoming_reservation_time")
+# With this safer implementation:
                 if upcoming_time and isinstance(upcoming_time, datetime):
                     # If the table has a reservation starting during our needed window, it's not available
                     reservation_end_time = date + timedelta(minutes=duration_minutes)
-                    # if (upcoming_time >= date and upcoming_time <= reservation_end_time) or (date >= upcoming_time and date <= table.get("reserved_until", upcoming_time)):
-                    #     continue
-                        
-
+                    
+                    # Get reserved_until with a safe default that's definitely a datetime
                     reserved_until = table.get("reserved_until")
-                    if reserved_until is None:
-                        reserved_until = upcoming_time  # Default to upcoming_time if reserved_until is None
-
-                    # Check for overlap with safer comparison
-                    if (upcoming_time is not None) and (
-                        (upcoming_time >= date and upcoming_time <= reservation_end_time) or 
-                        (date >= upcoming_time and reserved_until is not None and date <= reserved_until)
-                    ):
+                    
+                    # First check first part of condition without involving reserved_until
+                    if upcoming_time >= date and upcoming_time <= reservation_end_time:
+                        continue
+                        
+                    # Then check second part, but only if both values are not None
+                    if date >= upcoming_time and reserved_until is not None and date <= reserved_until:
                         continue
                 # Also check if any tables are currently occupied
                 if table.get("status") != TableStatus.OCCUPIED or table.get("reserved_until", datetime.now()) < date:
