@@ -158,17 +158,19 @@ class ReservationService:
         for field in required_fields:
             if field not in reservation_data:
                 raise ValueError(f"Missing required field: {field}")
-                
+        current_time = datetime.now()
+        if reservation_date.tzinfo is not None:
+            current_time = datetime.now(reservation_date.tzinfo)     
         # Set default values
         reservation_data["status"] = ReservationStatus.PENDING
-        reservation_data["created_at"] = datetime.now()
-        reservation_data["updated_at"] = datetime.now()
+        reservation_data["created_at"] = current_time
+        reservation_data["updated_at"] = current_time
         reservation_data["notification_sent"] = False
         reservation_data["reminder_sent"] = False
         reservation_data["reservation_code"] = self.generate_reservation_code()
         
         reservation_data.setdefault("table_ids", [])
-        
+
         # Calculate expected end time based on duration
         duration = reservation_data.get("expected_duration_minutes", 90)
         reservation_date = reservation_data["reservation_date"]
@@ -218,16 +220,19 @@ class ReservationService:
                     # CHANGE: Store upcoming reservation time rather than immediately setting to RESERVED
                     now = datetime.now()
                     reservation_time = reservation_data["reservation_date"]
-                    
+                    print(1234567, reservation_time, reservation_time.tzinfo)
                     if reservation_time.tzinfo is not None:
                 # Use timezone-aware now
                         now = datetime.now(reservation_time.tzinfo)
+                        print(1234567832, now, now.tzinfo)
                     else:
+
                 # Use naive datetime for consistency
                         now = datetime.now()
+                    print(123456700, now, now.tzinfo)
                     # Only set status to RESERVED if reservation is within 30 minutes
                     status = TableStatus.RESERVED if (reservation_time - now).total_seconds() <= 1800 else TableStatus.VACANT
-                    
+                    print(1234567822, status)
                     self.db.tables.update_one(
                         {"_id": ObjectId(table_id)},
                         {
