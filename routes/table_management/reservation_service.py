@@ -211,7 +211,7 @@ class ReservationService:
                             break
                 
                 reservation_data["table_ids"] = assigned_tables
-        print(f"Assigned tables: {reservation_data['table_pre']} {reservation_data}")
+        print(f"Assigned tables:  {reservation_data}")
         # Insert the reservation
         result = self.db.reservations.insert_one(reservation_data)
         print(f"Reservation ID: {result.inserted_id}")
