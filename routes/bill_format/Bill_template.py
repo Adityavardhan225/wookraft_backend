@@ -681,7 +681,11 @@ async def generate_pdf_with_playwright(html_content, width=800, margins=None):
     try:
         async with async_playwright() as p:
             # Launch browser
-            browser = await p.chromium.launch()
+            # browser = await p.chromium.launch()
+            browser = await p.chromium.launch(
+                headless=True,
+                args=["--no-sandbox", "--disable-setuid-sandbox"]
+            )
             
             # Create a new page
             page = await browser.new_page(viewport={"width": width, "height": 800})
