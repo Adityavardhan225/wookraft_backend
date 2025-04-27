@@ -540,13 +540,6 @@ async def generate_bill_pdf(
         
         pdf_data = await generate_pdf_with_wkhtmltopdf(
             html_content=full_html,
-            width=width_px,
-            margins={
-                "top": f"{paper_padding}mm",
-                "right": f"{paper_padding}mm",
-                "bottom": f"{paper_padding}mm",
-                "left": f"{paper_padding}mm"
-            }
         )
         
         filename = f"bill_{bill_data['billNo'].replace('/', '-')}.pdf"
