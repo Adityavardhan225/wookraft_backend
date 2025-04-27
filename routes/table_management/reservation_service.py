@@ -1,6 +1,6 @@
 from pymongo.database import Database
 from bson import ObjectId
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional, Tuple
 import logging
 from routes.table_management.table_management_model import (
@@ -158,11 +158,11 @@ class ReservationService:
         for field in required_fields:
             if field not in reservation_data:
                 raise ValueError(f"Missing required field: {field}")
-        current_time = datetime.now()
+        current_time = datetime.now(timezone.utc)
 
         reservation_date = reservation_data["reservation_date"]
         
-        current_time = datetime.now()     
+        current_time = datetime.now(timezone.utc)     
         # Set default values
         reservation_data["status"] = ReservationStatus.PENDING
         reservation_data["created_at"] = current_time
@@ -234,7 +234,7 @@ class ReservationService:
                     print(f"Updating table {table_id}, current data: {table}")
                         
                     # CHANGE: Store upcoming reservation time rather than immediately setting to RESERVED
-                    now = datetime.now()
+                    now = datetime.now(timezone.utc)
                     reservation_time = reservation_data["reservation_date"]
                     
                     
@@ -392,7 +392,7 @@ class ReservationService:
             raise ValueError(f"Reservation not found: {reservation_id}")
             
         # Set updated timestamp
-        update_data["updated_at"] = datetime.now()
+        update_data["updated_at"] = datetime.now(timezone.utc)
         
         # Handle date changes
         if "reservation_date" in update_data:
@@ -427,7 +427,7 @@ class ReservationService:
                                     "reserved_until": None,
                                     "upcoming_reservation_time": None,  # Add this line
                                     "reservation_id": None,  # Add this line
-                                    "updated_at": datetime.now()
+                                    "updated_at": datetime.now(timezone.utc)
                                 }
                             }
                         )
@@ -440,7 +440,7 @@ class ReservationService:
                     if table_id not in old_table_ids:
                         try:
                             # Calculate the right status based on timing
-                            now = datetime.now()
+                            now = datetime.now(timezone.utc)
                             reservation_time = update_data.get("reservation_date", current_reservation["reservation_date"])
                             status = TableStatus.RESERVED if (reservation_time - now).total_seconds() <= 1800 else TableStatus.VACANT
                             
@@ -452,7 +452,7 @@ class ReservationService:
                                         "upcoming_reservation_time": reservation_time,  # Add this line
                                         "reservation_id": reservation_id,  # Add this line
                                         "reserved_until": update_data.get("expected_end_time", current_reservation.get("expected_end_time")),
-                                        "updated_at": datetime.now()
+                                        "updated_at": datetime.now(timezone.utc)
                                     }
                                 }
                             )
@@ -491,7 +491,7 @@ class ReservationService:
         # Update reservation status
         update_data = {
             "status": ReservationStatus.CANCELLED,
-            "updated_at": datetime.now()
+            "updated_at": datetime.now(timezone.utc)
         }
         
         if reason:
@@ -507,8 +507,8 @@ class ReservationService:
                         "reserved_until": None,
                         "upcoming_reservation_time": None,  # Add this line
                         "reservation_id": None,  # Add this line
-                        "updated_at": datetime.now(),
-                        "timestamp": datetime.now(),
+                        "updated_at": datetime.now(timezone.utc),
+                        "timestamp": datetime.now(timezone.utc),
                         "reason": reason
                     }
                 }
@@ -527,7 +527,7 @@ class ReservationService:
                                 "reserved_until": None,
                                 "upcoming_reservation_time": None,
                                 "reservation_id": None,
-                                "updated_at": datetime.now()
+                                "updated_at": datetime.now(timezone.utc)
                             }
                         }
                     )
@@ -557,8 +557,8 @@ class ReservationService:
         # Update reservation status
         update_data = {
             "status": ReservationStatus.CHECKED_IN,
-            "check_in_time": datetime.now(),
-            "updated_at": datetime.now()
+            "check_in_time": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
         }
         
         if employee_id:
@@ -575,7 +575,7 @@ class ReservationService:
                 "$push": {
                     "status_history": {
                         "status": ReservationStatus.CHECKED_IN,
-                        "timestamp": datetime.now(),
+                        "timestamp": datetime.now(timezone.utc),
                         "employee_id": employee_id
                     }
                 }
@@ -590,9 +590,9 @@ class ReservationService:
                     {
                         "$set": {
                             "status": TableStatus.OCCUPIED,
-                            "occupied_since": datetime.now(),
+                            "occupied_since": datetime.now(timezone.utc),
                             "employee_id": employee_id,
-                            "updated_at": datetime.now()
+                            "updated_at": datetime.now(timezone.utc)
                         }
                     }
                 )
@@ -620,8 +620,8 @@ class ReservationService:
         # Update reservation status
         update_data = {
             "status": ReservationStatus.COMPLETED,
-            "completion_time": datetime.now(),
-            "updated_at": datetime.now()
+            "completion_time": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
         }
         
         self.db.reservations.update_one(
@@ -631,7 +631,7 @@ class ReservationService:
                 "$push": {
                     "status_history": {
                         "status": ReservationStatus.COMPLETED,
-                        "timestamp": datetime.now()
+                        "timestamp": datetime.now(timezone.utc)
                     }
                 }
             }
@@ -649,7 +649,7 @@ class ReservationService:
                                 "occupied_since": None,
                                 "reserved_until": None,
                                 "employee_id": None,
-                                "updated_at": datetime.now()
+                                "updated_at": datetime.now(timezone.utc)
                             }
                         }
                     )
@@ -677,8 +677,8 @@ class ReservationService:
         # Update reservation status
         update_data = {
             "status": ReservationStatus.NO_SHOW,
-            "no_show_time": datetime.now(),
-            "updated_at": datetime.now()
+            "no_show_time": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
         }
         
         self.db.reservations.update_one(
@@ -688,7 +688,7 @@ class ReservationService:
                 "$push": {
                     "status_history": {
                         "status": ReservationStatus.NO_SHOW,
-                        "timestamp": datetime.now()
+                        "timestamp": datetime.now(timezone.utc)
                     }
                 }
             }
@@ -704,7 +704,7 @@ class ReservationService:
                             "$set": {
                                 "status": TableStatus.VACANT,
                                 "reserved_until": None,
-                                "updated_at": datetime.now()
+                                "updated_at": datetime.now(timezone.utc)
                             }
                         }
                     )
@@ -929,7 +929,7 @@ class ReservationService:
             List of upcoming reservation documents
         """
         # Calculate time range
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         end_time = now + timedelta(hours=hours)
         
         # Query upcoming reservations
@@ -979,7 +979,7 @@ class ReservationService:
             List of reservations needing reminders
         """
         # Calculate time range (reservations coming up in 23-25 hours)
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         start_time = now + timedelta(hours=23)
         end_time = now + timedelta(hours=25)
         
@@ -1003,7 +1003,7 @@ class ReservationService:
             Number of reservations marked as no-show
         """
         # Calculate cutoff time (30 minutes past reservation time)
-        cutoff_time = datetime.now() - timedelta(minutes=30)
+        cutoff_time = datetime.now(timezone.utc) - timedelta(minutes=30)
         
         # Query overdue reservations
         query = {
