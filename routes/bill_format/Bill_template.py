@@ -538,7 +538,7 @@ async def generate_bill_pdf(
         # Generate PDF using Playwright
         width_px = int(paper_width * 3.8)
         
-        pdf_data = await generate_pdf_with_playwright(
+        pdf_data = await generate_pdf_with_wkhtmltopdf(
             html_content=full_html,
             width=width_px,
             margins={
@@ -663,58 +663,93 @@ async def generate_bill_pdf(
 
 
 # Add this helper function to generate PDFs using Playwright
-async def generate_pdf_with_playwright(html_content, width=800, margins=None):
-    """
-    Generate PDF from HTML content using Playwright.
+# async def generate_pdf_with_wkhtmltopdf(html_content, width=800, margins=None):
+#     """
+#     Generate PDF from HTML content using Playwright.
     
-    Args:
-        html_content: The HTML content to render
-        width: Page width in pixels (default 800px)
-        margins: Dictionary with top, right, bottom, left margins
+#     Args:
+#         html_content: The HTML content to render
+#         width: Page width in pixels (default 800px)
+#         margins: Dictionary with top, right, bottom, left margins
         
-    Returns:
-        PDF file content as bytes
+#     Returns:
+#         PDF file content as bytes
+#     """
+#     if margins is None:
+#         margins = {"top": "20mm", "right": "20mm", "bottom": "20mm", "left": "20mm"}
+        
+#     try:
+#         async with async_playwright() as p:
+#             # Launch browser
+#             # browser = await p.chromium.launch()
+#             browser = await p.chromium.launch(
+#                 headless=True,
+#                 args=["--no-sandbox", "--disable-setuid-sandbox"]
+#             )
+            
+#             # Create a new page
+#             page = await browser.new_page(viewport={"width": width, "height": 800})
+            
+#             # Set the HTML content
+#             await page.set_content(html_content, wait_until="networkidle")
+            
+#             # Allow time for any fonts or styles to load
+#             await asyncio.sleep(0.5)
+            
+#             # Generate PDF
+#             pdf_data = await page.pdf(
+#                 format="A4",  # This will be overridden by width and height if provided
+#                 width=f"{width}px",
+#                 print_background=True,
+#                 margin=margins
+#             )
+            
+#             # Close the browser
+#             await browser.close()
+            
+#             return pdf_data
+#     except Exception as e:
+#         print(f"[ERROR] Playwright PDF generation failed: {str(e)}")
+#         print(traceback.format_exc())
+#         raise e
+    
+
+
+import subprocess
+import os
+
+def generate_pdf_with_wkhtmltopdf(html_content: str) -> bytes:
     """
-    if margins is None:
-        margins = {"top": "20mm", "right": "20mm", "bottom": "20mm", "left": "20mm"}
-        
+    Generate PDF from HTML content using wkhtmltopdf.
+    """
     try:
-        async with async_playwright() as p:
-            # Launch browser
-            # browser = await p.chromium.launch()
-            browser = await p.chromium.launch(
-                headless=True,
-                args=["--no-sandbox", "--disable-setuid-sandbox"]
-            )
-            
-            # Create a new page
-            page = await browser.new_page(viewport={"width": width, "height": 800})
-            
-            # Set the HTML content
-            await page.set_content(html_content, wait_until="networkidle")
-            
-            # Allow time for any fonts or styles to load
-            await asyncio.sleep(0.5)
-            
-            # Generate PDF
-            pdf_data = await page.pdf(
-                format="A4",  # This will be overridden by width and height if provided
-                width=f"{width}px",
-                print_background=True,
-                margin=margins
-            )
-            
-            # Close the browser
-            await browser.close()
-            
-            return pdf_data
+        # Write HTML content to a temporary file
+        temp_html = "temp.html"
+        output_pdf = "output.pdf"
+        
+        with open(temp_html, "w") as f:
+            f.write(html_content)
+        
+        # Run wkhtmltopdf command
+        subprocess.run(["wkhtmltopdf", temp_html, output_pdf], check=True)
+        
+        # Read the generated PDF
+        with open(output_pdf, "rb") as f:
+            pdf_data = f.read()
+        
+        return pdf_data
+    except subprocess.CalledProcessError as e:
+        print(f"[ERROR] wkhtmltopdf command failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate PDF")
     except Exception as e:
-        print(f"[ERROR] Playwright PDF generation failed: {str(e)}")
-        print(traceback.format_exc())
-        raise e
-    
-
-
+        print(f"[ERROR] Unexpected error during PDF generation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate PDF")
+    finally:
+        # Clean up temporary files
+        if os.path.exists(temp_html):
+            os.remove(temp_html)
+        if os.path.exists(output_pdf):
+            os.remove(output_pdf)
 
 
 
