@@ -1,6 +1,6 @@
 from pymongo.database import Database
 from bson import ObjectId
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional, Tuple
 import logging
 from routes.table_management.table_management_model import (
@@ -158,12 +158,25 @@ class ReservationService:
         for field in required_fields:
             if field not in reservation_data:
                 raise ValueError(f"Missing required field: {field}")
-        current_time = datetime.now()
-
+        
+        # CHANGE: Always use UTC for all times
+        current_time = datetime.now(timezone.utc)
+        
+        # CHANGE: Ensure reservation date is converted to UTC
         reservation_date = reservation_data["reservation_date"]
+        if isinstance(reservation_date, str):
+            reservation_date = datetime.fromisoformat(reservation_date.replace('Z', '+00:00'))
+            
+        # CHANGE: Force convert to UTC if it has timezone info, or assume it's UTC if naive
         if reservation_date.tzinfo is not None:
-            current_time = datetime.now(reservation_date.tzinfo)     
-        # Set default values
+            reservation_date = reservation_date.astimezone(timezone.utc)
+        else:
+            # If naive datetime, assume it's already UTC
+            reservation_date = reservation_date.replace(tzinfo=timezone.utc)
+            
+        reservation_data["reservation_date"] = reservation_date
+        
+        # Set default values - all with UTC times
         reservation_data["status"] = ReservationStatus.PENDING
         reservation_data["created_at"] = current_time
         reservation_data["updated_at"] = current_time
@@ -171,14 +184,10 @@ class ReservationService:
         reservation_data["reminder_sent"] = False
         reservation_data["reservation_code"] = self.generate_reservation_code()
         
-        reservation_data.setdefault("table_ids", [])
-
         # Calculate expected end time based on duration
         duration = reservation_data.get("expected_duration_minutes", 90)
+        reservation_data["expected_end_time"] = reservation_date + timedelta(minutes=duration)
         
-        if isinstance(reservation_date, str):
-            reservation_date = datetime.fromisoformat(reservation_date.replace('Z', '+00:00'))
-            reservation_data["reservation_date"] = reservation_date
             
         reservation_data["expected_end_time"] = reservation_date + timedelta(minutes=duration)
         print(f"Expected end time: {reservation_data['expected_end_time']}")  # Debugging line
@@ -237,10 +246,6 @@ class ReservationService:
                     now = datetime.now()
                     reservation_time = reservation_data["reservation_date"]
                     
-                    if reservation_time.tzinfo is not None:
-                        now = datetime.now(reservation_time.tzinfo)
-                    else:
-                        now = datetime.now()
                         
                     status = TableStatus.RESERVED if (reservation_time - now).total_seconds() <= 1800 else TableStatus.VACANT
                     
