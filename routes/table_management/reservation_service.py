@@ -159,6 +159,8 @@ class ReservationService:
             if field not in reservation_data:
                 raise ValueError(f"Missing required field: {field}")
         current_time = datetime.now()
+
+        reservation_date = reservation_data["reservation_date"]
         if reservation_date.tzinfo is not None:
             current_time = datetime.now(reservation_date.tzinfo)     
         # Set default values
@@ -173,7 +175,7 @@ class ReservationService:
 
         # Calculate expected end time based on duration
         duration = reservation_data.get("expected_duration_minutes", 90)
-        reservation_date = reservation_data["reservation_date"]
+        
         if isinstance(reservation_date, str):
             reservation_date = datetime.fromisoformat(reservation_date.replace('Z', '+00:00'))
             reservation_data["reservation_date"] = reservation_date
