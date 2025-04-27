@@ -182,3 +182,45 @@ async def verify_otp_and_create_user(create_user_request: CreateUserRequest, otp
     except Exception as error:
         print(f"Error: {error}")
         raise HTTPException(status_code=500, detail=str(error))
+
+
+
+
+
+
+
+# First define a model for query parameters (add this to the existing models)
+class EmployeeFilters(BaseModel):
+    role: str = None
+    search: str = None
+
+@authRouter.get("/employees", status_code=200)
+async def get_all_employees(
+    role: str = None, 
+    search: str = None,
+    current_user: UserOutput = Depends(get_current_user), 
+    db: Database = Depends(get_db)
+):
+    """Get all employees with their complete information"""
+    try:
+        # Verify user has admin privileges
+        if current_user.role != "admin" and current_user.role != "manager":
+            raise HTTPException(status_code=403, detail="Only admins and managers can view all employees")
+        
+        # Create filters from query parameters
+        filters = {}
+        if role:
+            filters["role"] = role
+        if search:
+            filters["search"] = search
+        
+        admin_service = AdminUserService(db)
+        employees = admin_service.get_all_employees(current_user, filters)
+        return employees
+        
+    except HTTPException as e:
+        # Re-raise HTTP exceptions
+        raise e
+    except Exception as error:
+        print(f"Error retrieving employees: {error}")
+        raise HTTPException(status_code=500, detail=str(error))

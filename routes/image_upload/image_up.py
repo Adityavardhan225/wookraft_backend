@@ -147,6 +147,37 @@ async def delete_image(image_id: Optional[str] = None, image_name: Optional[str]
     except Exception as e:
         logging.error(f"Error deleting image: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+
+
+@router.get("/image_lookup", response_model=dict)
+async def get_image_by_url(
+    transformed_url: str = Query(..., description="The transformed URL of the image to find"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Look up an image by its transformed URL and return the image name
+    """
+    try:
+        # Find the image with the matching URL
+        image = image_collection.find_one({
+            "transformed_url": transformed_url, 
+            "owner_id": current_user.owner_id
+        })
+        
+        if not image:
+            raise HTTPException(status_code=404, detail="No image found with this URL")
+        
+        # Return the image name
+        return {
+            "name": image["name"],
+            "id": str(image["_id"])
+        }
+        
+    except Exception as e:
+        logging.error(f"Error looking up image by URL: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 
@@ -266,3 +297,6 @@ async def upload_multiple_images(
         "successful": successful_uploads,
         "failed": failed_uploads
     }
+
+
+

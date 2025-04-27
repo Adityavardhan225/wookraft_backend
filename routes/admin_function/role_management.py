@@ -39,3 +39,26 @@ async def delete_role_permission(role: str, current_user: UserOutput = Depends(g
     
     db.roles.delete_one({"role": role})
     return {"message": "Role permission deleted successfully"}
+
+
+@router.get("/all-roles", status_code=200)
+async def get_all_access_control(db: Database = Depends(get_db)):
+    """
+    Get all roles and their associated permissions.
+    :param db: The database connection.
+    :return: List of all roles and their permissions.
+    """
+    try:
+        # Fetch all role documents from the database
+        all_roles = list(db.roles.find({}, {"_id": 0}))
+        
+        if not all_roles:
+            return {"message": "No roles found", "roles": []}
+            
+        return {"roles": all_roles, "count": len(all_roles)}
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to retrieve roles: {str(e)}"
+        )
