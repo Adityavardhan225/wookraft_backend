@@ -100,7 +100,9 @@ class ReservationService:
                     if date >= upcoming_time and reserved_until is not None and date <= reserved_until:
                         continue
                 # Also check if any tables are currently occupied
-                if table.get("status") != TableStatus.OCCUPIED or table.get("reserved_until", datetime.now()) < date:
+                if table.get("status") != TableStatus.OCCUPIED:
+                    available_tables.append(table)
+                elif table.get("reserved_until") is not None and table.get("reserved_until") < date:
                     available_tables.append(table)
                     
         # Sort tables by capacity (to minimize wastage)
@@ -173,7 +175,7 @@ class ReservationService:
             reservation_data["reservation_date"] = reservation_date
             
         reservation_data["expected_end_time"] = reservation_date + timedelta(minutes=duration)
-        
+        print(f"Expected end time: {reservation_data['expected_end_time']}")  # Debugging line
         # Try to assign tables if possible
         if "table_ids" not in reservation_data:
             party_size = reservation_data["party_size"]
@@ -203,10 +205,10 @@ class ReservationService:
                             break
                 
                 reservation_data["table_ids"] = assigned_tables
-        
+        print(f"Assigned tables: {reservation_data['table_ids']}")
         # Insert the reservation
         result = self.db.reservations.insert_one(reservation_data)
-        
+        print(f"Reservation ID: {result.inserted_id}")
         # Update tables with reservation information if tables assigned
         if "table_ids" in reservation_data and reservation_data["table_ids"]:
             for table_id in reservation_data["table_ids"]:
@@ -232,7 +234,8 @@ class ReservationService:
                     )
                 except Exception as e:
                     logging.error(f"Error updating table {table_id} with reservation: {str(e)}")
-                
+        
+        print(f"Reservation created with ID: {result.inserted_id}")       
         # Return the created reservation
         return self.get_reservation_by_id(str(result.inserted_id))
     

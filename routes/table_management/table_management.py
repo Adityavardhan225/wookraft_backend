@@ -454,8 +454,11 @@ async def create_reservation(
     """Create a new reservation"""
     try:
         reservation_service = ReservationService(db)
+        print('999debug', reservation)
         result = reservation_service.create_reservation(reservation.dict())
+        print('999222debug', result)
         result = serialize_for_json(result)
+        print('999333debug', result)
         
         # Broadcast reservation creation to all clients
         await manager.broadcast({
