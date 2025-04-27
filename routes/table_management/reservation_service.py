@@ -211,10 +211,12 @@ class ReservationService:
                             break
                 
                 reservation_data["table_ids"] = assigned_tables
-        print(f"Assigned tables: {reservation_data['table_ids']}")
+        print(f"Assigned tables: {reservation_data['table_pre']} {reservation_data}")
         # Insert the reservation
         result = self.db.reservations.insert_one(reservation_data)
         print(f"Reservation ID: {result.inserted_id}")
+        print
+
         # Update tables with reservation information if tables assigned
 # Update tables with reservation information if tables assigned
         if "table_ids" in reservation_data and reservation_data["table_ids"]:

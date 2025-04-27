@@ -125,6 +125,7 @@ class ReservationCreate(BaseModel):
     expected_duration_minutes: int = 90
     special_requests: Optional[str] = None
     table_preference: Optional[str] = None
+    table_ids: Optional[List[str]] = None
 
 class ReservationUpdate(BaseModel):
     customer_name: Optional[str] = None
