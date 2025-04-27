@@ -3,7 +3,9 @@ services:
     type: web
     env: python
     region: oregon
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install -r requirements.txt
+      playwright install
     startCommand: uvicorn main:app --host 0.0.0.0 --port 8000
 
  
@@ -12,7 +14,9 @@ services:
     type: worker
     env: python
     region: oregon
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install -r requirements.txt
+      playwright install
     startCommand: celery -A routes.campaign.sending_campaign.services.celery_app worker -l info --pool=solo -Q scheduler,emails,campaigns
     envVars:
       - key: REDIS_URL
@@ -22,7 +26,9 @@ services:
     type: worker
     env: python
     region: oregon
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install -r requirements.txt
+      playwright install
     startCommand: celery -A routes.campaign.sending_campaign.services.celery_app beat -l info
     envVars:
       - key: REDIS_URL
@@ -32,7 +38,9 @@ services:
     type: worker
     env: python
     region: oregon
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install -r requirements.txt
+      playwright install
     startCommand: celery -A routes.admin_function.discount_calculation worker --loglevel=info --pool=solo
     envVars:
       - key: REDIS_URL
@@ -42,7 +50,9 @@ services:
     type: worker
     env: python
     region: oregon
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install -r requirements.txt
+      playwright install
     startCommand: celery -A routes.admin_function.discount_calculation beat --loglevel=info
     envVars:
       - key: REDIS_URL
