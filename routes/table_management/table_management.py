@@ -104,7 +104,7 @@ async def get_tables_management_available(
     try:
         # Convert the reservation time string to datetime object with timezone awareness
         date_obj = datetime.fromisoformat(reservation_time.replace('Z', '+00:00'))
-        
+        print(f"date_obj: {date_obj}")
         # Validate parameters
         if party_size <= 0:
             raise HTTPException(status_code=400, detail="Party size must be positive")
@@ -119,39 +119,37 @@ async def get_tables_management_available(
         # Ensure datetime is timezone-naive for compatibility with database values
         # This is critical - MongoDB often stores naive datetimes
         date_obj_naive = date_obj.replace(tzinfo=None)
-        
+        print(f"date_obj_naive: {date_obj_naive}")
         # Find available tables using both methods for comprehensive results
         tables_by_size = reservation_service.find_available_tables(date_obj_naive, party_size, duration_minutes)
+        print(f"tables_by_size: {tables_by_size}")
         tables_by_time = table_service.find_available_tables_for_time(date_obj_naive, duration_minutes)
-        
+        print(f"tables_by_size: {tables_by_time}")
         # Merge results and filter by party_size for the tables_by_time results
         available_tables = tables_by_size or []
-        
+        print(f"available_tables: {available_tables}")
         # Add tables from the time-based search that meet size requirements
         # and aren't already in the results
         existing_ids = {str(table["_id"]) for table in available_tables} if available_tables else set()
-        
+        print(f"existing_ids: {existing_ids}")
         for table in tables_by_time or []:
             table_id = str(table["_id"])
             if table_id not in existing_ids and table["capacity"] >= party_size:
                 available_tables.append(table)
-        
+        print(f"available_tables after adding time-based: {available_tables}")
         # Sort by capacity to minimize wastage
         if available_tables:
             available_tables.sort(key=lambda t: t["capacity"])
-        
+        print(f"available_tables after sorting: {available_tables}")
         # Convert ObjectIDs to strings for all tables
-        for table in available_tables:
-            if "_id" in table:
-                table["id"] = str(table["_id"])
-                del table["_id"]
+        
         
         # Add availability status and reservation time info to each table
         for table in available_tables:
             table["availability"] = "AVAILABLE"
             # Use the original timezone-aware datetime for the response
             table["reservation_time"] = date_obj.isoformat()
-            
+        print(f"available_tables after adding availability: {available_tables}")  
         return available_tables
         
     except ValueError as e:
