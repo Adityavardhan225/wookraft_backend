@@ -207,19 +207,43 @@ async def get_all_employees(
         if current_user.role != "admin" and current_user.role != "manager":
             raise HTTPException(status_code=403, detail="Only admins and managers can view all employees")
         
-        # Create filters from query parameters
-        filters = {}
+        # Create base query
+        query = {}
         if role:
-            filters["role"] = role
-        if search:
-            filters["search"] = search
+            query["role"] = role
         
-        admin_service = AdminUserService(db)
-        employees = admin_service.get_all_employees(current_user, filters)
+        # Get employees from database
+        employees = list(db.users.find(query))
+        
+        # Apply search filter if provided
+        if search:
+            search_term = search.lower()
+            filtered_employees = []
+            
+            for employee in employees:
+                # Check if search term is in name, email or username
+                if (
+                    search_term in (employee.get("first_name", "") + " " + employee.get("last_name", "")).lower()
+                    or search_term in employee.get("email", "").lower()
+                    or search_term in employee.get("username", "").lower()
+                ):
+                    filtered_employees.append(employee)
+                    
+            employees = filtered_employees
+        
+        # Process results for response
+        for employee in employees:
+            if "_id" in employee:
+                employee["id"] = str(employee["_id"])
+                del employee["_id"]
+                
+            # Remove sensitive data
+            if "password" in employee:
+                del employee["password"]
+        
         return employees
         
     except HTTPException as e:
-        # Re-raise HTTP exceptions
         raise e
     except Exception as error:
         print(f"Error retrieving employees: {error}")
