@@ -89,6 +89,12 @@ async def get_access_control(role: str, db: Database = Depends(get_db)):
     role_permissions = db.roles.find_one({"role": role})
     if not role_permissions:
         raise HTTPException(status_code=404, detail="Role not found")
+    
+    # Convert MongoDB ObjectId to string to make the document JSON serializable
+    if "_id" in role_permissions:
+        role_permissions["id"] = str(role_permissions["_id"])
+        del role_permissions["_id"]
+    
     return role_permissions
 
 
