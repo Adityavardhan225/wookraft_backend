@@ -92,7 +92,7 @@ def serialize_for_json(obj):
         return obj
     
 
-@router.get("/tables_management/tables/available", response_model=List[TableResponse])
+@router.get("/tables_management/reserved_table/available", response_model=List[TableResponse])
 async def get_tables_management_available(
     reservation_time: str = Query(...),
     party_size: int = Query(...),
