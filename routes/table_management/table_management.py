@@ -9,6 +9,7 @@ from routes.table_management.table_management_model import (
     ReservationCreate, ReservationUpdate, ReservationResponse, ReservationStatus,
     FloorCreate, FloorUpdate, FloorResponse 
 )
+from routes.table_management.table_service import TableService
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 import logging
@@ -113,6 +114,7 @@ async def get_tables_management_available(
         
         # Get reservation service
         reservation_service = ReservationService(db)
+        table_service = TableService(db)
         
         # Ensure datetime is timezone-naive for compatibility with database values
         # This is critical - MongoDB often stores naive datetimes
@@ -120,7 +122,7 @@ async def get_tables_management_available(
         
         # Find available tables using both methods for comprehensive results
         tables_by_size = reservation_service.find_available_tables(date_obj_naive, party_size, duration_minutes)
-        tables_by_time = reservation_service.find_available_tables_for_time(date_obj_naive, duration_minutes)
+        tables_by_time = table_service.find_available_tables_for_time(date_obj_naive, duration_minutes)
         
         # Merge results and filter by party_size for the tables_by_time results
         available_tables = tables_by_size or []
