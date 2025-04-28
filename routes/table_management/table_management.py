@@ -102,61 +102,140 @@ async def get_tables_management_available(
 ):
     """Endpoint for Flutter app to get available tables"""
     try:
+        print(f"DEBUG: Starting function with params: reservation_time={reservation_time}, party_size={party_size}, duration_minutes={duration_minutes}")
+        
         # Convert the reservation time string to datetime object with timezone awareness
         date_obj = datetime.fromisoformat(reservation_time.replace('Z', '+00:00'))
-        print(f"date_obj: {date_obj}")
+        print(f"DEBUG: Parsed date_obj: {date_obj}")
+        
         # Validate parameters
+        print(f"DEBUG: Validating parameters")
         if party_size <= 0:
+            print(f"DEBUG: Invalid party_size: {party_size}")
             raise HTTPException(status_code=400, detail="Party size must be positive")
         
         if duration_minutes <= 0:
+            print(f"DEBUG: Invalid duration_minutes: {duration_minutes}")
             raise HTTPException(status_code=400, detail="Duration must be positive")
         
         # Get reservation service
+        print(f"DEBUG: Creating services")
         reservation_service = ReservationService(db)
         table_service = TableService(db)
         
         # Ensure datetime is timezone-naive for compatibility with database values
         # This is critical - MongoDB often stores naive datetimes
+        print(f"DEBUG: Converting datetime to naive")
         date_obj_naive = date_obj.replace(tzinfo=None)
-        print(f"date_obj_naive: {date_obj_naive}")
+        print(f"DEBUG: date_obj_naive: {date_obj_naive}")
+        
         # Find available tables using both methods for comprehensive results
+        print(f"DEBUG: Calling find_available_tables")
         tables_by_size = reservation_service.find_available_tables(date_obj_naive, party_size, duration_minutes)
-        print(f"tables_by_size: {tables_by_size}")
+        print(f"DEBUG: tables_by_size count: {len(tables_by_size) if tables_by_size else 0}")
+        print(f"DEBUG: tables_by_size: {tables_by_size}")
+        
+        print(f"DEBUG: Calling find_available_tables_for_time")
         tables_by_time = table_service.find_available_tables_for_time(date_obj_naive, duration_minutes)
-        print(f"tables_by_size: {tables_by_time}")
+        print(f"DEBUG: tables_by_time count: {len(tables_by_time) if tables_by_time else 0}")
+        print(f"DEBUG: tables_by_time: {tables_by_time}")
+        
         # Merge results and filter by party_size for the tables_by_time results
+        print(f"DEBUG: Setting up available_tables")
         available_tables = tables_by_size or []
-        print(f"available_tables: {available_tables}")
+        print(f"DEBUG: available_tables initial count: {len(available_tables)}")
+        print(f"DEBUG: available_tables: {available_tables}")
+        
         # Add tables from the time-based search that meet size requirements
         # and aren't already in the results
-        existing_ids = {str(table["_id"]) for table in available_tables} if available_tables else set()
-        print(f"existing_ids: {existing_ids}")
-        for table in tables_by_time or []:
-            table_id = str(table["_id"])
-            if table_id not in existing_ids and table["capacity"] >= party_size:
-                available_tables.append(table)
-        print(f"available_tables after adding time-based: {available_tables}")
-        # Sort by capacity to minimize wastage
-        if available_tables:
-            available_tables.sort(key=lambda t: t["capacity"])
-        print(f"available_tables after sorting: {available_tables}")
-        # Convert ObjectIDs to strings for all tables
+        print(f"DEBUG: Creating existing_ids set")
         
+        # Debug - check for _id in each table
+        print(f"DEBUG: Checking each table for _id field")
+        for i, table in enumerate(available_tables):
+            print(f"DEBUG: Table {i} has _id? {'_id' in table}, has id? {'id' in table}")
+            if '_id' not in table and 'id' in table:
+                print(f"DEBUG: Table {i} has id but no _id, adding _id")
+                table['_id'] = ObjectId(table['id'])
         
-        # Add availability status and reservation time info to each table
+        existing_ids = set()
         for table in available_tables:
-            table["availability"] = "AVAILABLE"
-            # Use the original timezone-aware datetime for the response
-            table["reservation_time"] = date_obj.isoformat()
-        print(f"available_tables after adding availability: {available_tables}")  
-        return available_tables
+            if '_id' in table:
+                existing_ids.add(str(table["_id"]))
+            elif 'id' in table:
+                existing_ids.add(table["id"])
+                
+        print(f"DEBUG: existing_ids: {existing_ids}")
+        
+        print(f"DEBUG: Processing tables_by_time")
+        for i, table in enumerate(tables_by_time or []):
+            print(f"DEBUG: Processing table_by_time {i}")
+            
+            # Check if table has _id or id
+            if '_id' not in table and 'id' not in table:
+                print(f"DEBUG: Table {i} has neither _id nor id, skipping")
+                continue
+                
+            table_id = None
+            if '_id' in table:
+                table_id = str(table["_id"])
+            elif 'id' in table:
+                table_id = table["id"]
+            
+            print(f"DEBUG: Table {i} has id: {table_id}")
+            
+            if table_id not in existing_ids and table.get("capacity", 0) >= party_size:
+                print(f"DEBUG: Adding table {i} to available_tables")
+                available_tables.append(table)
+                existing_ids.add(table_id)
+        
+        print(f"DEBUG: available_tables after adding time-based: {len(available_tables)}")
+        
+        # Sort by capacity to minimize wastage
+        print(f"DEBUG: Sorting tables by capacity")
+        if available_tables:
+            try:
+                available_tables.sort(key=lambda t: t.get("capacity", 0))
+                print(f"DEBUG: Sorting successful")
+            except Exception as e:
+                print(f"DEBUG: Error during sorting: {str(e)}")
+        
+        print(f"DEBUG: available_tables after sorting: {len(available_tables)}")
+        
+        # Process tables for response
+        print(f"DEBUG: Processing tables for response")
+        result_tables = []
+        
+        for i, table in enumerate(available_tables):
+            try:
+                print(f"DEBUG: Processing table {i} for response")
+                processed_table = dict(table)  # Create a copy
+                
+                # Ensure we have id field
+                if "_id" in processed_table:
+                    processed_table["id"] = str(processed_table["_id"])
+                    del processed_table["_id"]
+                
+                # Add additional fields
+                processed_table["availability"] = "AVAILABLE"
+                processed_table["reservation_time"] = date_obj.isoformat()
+                
+                result_tables.append(processed_table)
+                print(f"DEBUG: Added processed table {i} to results")
+            except Exception as e:
+                print(f"DEBUG: Error processing table {i}: {str(e)}")
+                continue
+        
+        print(f"DEBUG: Final result_tables count: {len(result_tables)}")
+        return result_tables
         
     except ValueError as e:
+        print(f"DEBUG: ValueError: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Invalid date format or value: {str(e)}")
     except Exception as e:
+        print(f"DEBUG: Unexpected exception: {str(e)}")
         logging.error(f"Error finding available tables: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))  # Return actual error for debugging
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")# Return actual error for debugging
     
 
 
