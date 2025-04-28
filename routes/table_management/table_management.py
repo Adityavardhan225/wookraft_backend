@@ -92,6 +92,70 @@ def serialize_for_json(obj):
         return obj
     
 
+@router.get("/tables/available", response_model=List[TableResponse])
+async def get_available_tables(
+    reservation_time: str = Query(..., description="Reservation date and time in ISO format"),
+    party_size: int = Query(..., description="Number of people in the party"),
+    duration_minutes: int = Query(90, description="Expected duration of the reservation in minutes"),
+    db: Database = Depends(get_db)
+):
+    """
+    Get tables available for a specific reservation time and party size
+    """
+    try:
+        # Convert the reservation time string to datetime object
+        date_obj = datetime.fromisoformat(reservation_time.replace('Z', '+00:00'))
+        
+        # Validate parameters
+        if party_size <= 0:
+            raise HTTPException(status_code=400, detail="Party size must be positive")
+        
+        if duration_minutes <= 0:
+            raise HTTPException(status_code=400, detail="Duration must be positive")
+        
+        # Get reservation service
+        reservation_service = ReservationService(db)
+        
+        # Find available tables using both methods for comprehensive results
+        tables_by_size = reservation_service.find_available_tables(date_obj, party_size, duration_minutes)
+        tables_by_time = reservation_service.find_available_tables_for_time(date_obj, duration_minutes)
+        print("tables_by_size", tables_by_size)
+        # Merge results and filter by party_size for the tables_by_time results
+        available_tables = tables_by_size
+        
+        # Add tables from the time-based search that meet size requirements
+        # and aren't already in the results
+        existing_ids = {str(table["_id"]) for table in available_tables}
+        
+        for table in tables_by_time:
+            table_id = str(table["_id"])
+            if table_id not in existing_ids and table["capacity"] >= party_size:
+                available_tables.append(table)
+        print("available_tables", available_tables)
+        # Sort by capacity to minimize wastage
+        available_tables.sort(key=lambda t: t["capacity"])
+        
+        # Convert ObjectIDs to strings for all tables
+        for table in available_tables:
+            if "_id" in table:
+                table["id"] = str(table["_id"])
+                del table["_id"]
+        print("available_tables 12223", available_tables)
+        # Add availability status and reservation time info to each table
+        for table in available_tables:
+            table["availability"] = "AVAILABLE"
+            table["reservation_time"] = date_obj.isoformat()
+        print("available_tables 123", available_tables)  
+        return available_tables
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid date format or value: {str(e)}")
+    except Exception as e:
+        logging.error(f"Error finding available tables: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+    
+
+    
 @router.post("/floors", response_model=FloorResponse)
 async def create_floor(
     floor: FloorCreate,
@@ -847,64 +911,3 @@ async def websocket_endpoint(
 
 
 
-@router.get("/tables/available", response_model=List[TableResponse])
-async def get_available_tables(
-    reservation_time: str = Query(..., description="Reservation date and time in ISO format"),
-    party_size: int = Query(..., description="Number of people in the party"),
-    duration_minutes: int = Query(90, description="Expected duration of the reservation in minutes"),
-    db: Database = Depends(get_db)
-):
-    """
-    Get tables available for a specific reservation time and party size
-    """
-    try:
-        # Convert the reservation time string to datetime object
-        date_obj = datetime.fromisoformat(reservation_time.replace('Z', '+00:00'))
-        
-        # Validate parameters
-        if party_size <= 0:
-            raise HTTPException(status_code=400, detail="Party size must be positive")
-        
-        if duration_minutes <= 0:
-            raise HTTPException(status_code=400, detail="Duration must be positive")
-        
-        # Get reservation service
-        reservation_service = ReservationService(db)
-        
-        # Find available tables using both methods for comprehensive results
-        tables_by_size = reservation_service.find_available_tables(date_obj, party_size, duration_minutes)
-        tables_by_time = reservation_service.find_available_tables_for_time(date_obj, duration_minutes)
-        print("tables_by_size", tables_by_size)
-        # Merge results and filter by party_size for the tables_by_time results
-        available_tables = tables_by_size
-        
-        # Add tables from the time-based search that meet size requirements
-        # and aren't already in the results
-        existing_ids = {str(table["_id"]) for table in available_tables}
-        
-        for table in tables_by_time:
-            table_id = str(table["_id"])
-            if table_id not in existing_ids and table["capacity"] >= party_size:
-                available_tables.append(table)
-        print("available_tables", available_tables)
-        # Sort by capacity to minimize wastage
-        available_tables.sort(key=lambda t: t["capacity"])
-        
-        # Convert ObjectIDs to strings for all tables
-        for table in available_tables:
-            if "_id" in table:
-                table["id"] = str(table["_id"])
-                del table["_id"]
-        print("available_tables 12223", available_tables)
-        # Add availability status and reservation time info to each table
-        for table in available_tables:
-            table["availability"] = "AVAILABLE"
-            table["reservation_time"] = date_obj.isoformat()
-        print("available_tables 123", available_tables)  
-        return available_tables
-        
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid date format or value: {str(e)}")
-    except Exception as e:
-        logging.error(f"Error finding available tables: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error")
