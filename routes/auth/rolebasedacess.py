@@ -90,3 +90,32 @@ async def get_access_control(role: str, db: Database = Depends(get_db)):
     if not role_permissions:
         raise HTTPException(status_code=404, detail="Role not found")
     return role_permissions
+
+
+@adminRouter.get("/roles", status_code=200)
+async def get_all_roles(search: str = None, db: Database = Depends(get_db)):
+    """
+    Get all roles from the database with optional search filter.
+    """
+    try:
+        # Get all roles
+        roles = list(db.roles.find({}))
+        
+        # Process _id to string
+        for role in roles:
+            if "_id" in role:
+                role["id"] = str(role["_id"])
+                del role["_id"]
+        
+        # Apply search filter if provided
+        if search:
+            search_term = search.lower()
+            roles = [
+                role for role in roles 
+                if search_term in role.get("role", "").lower()
+            ]
+        
+        return roles
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve roles: {str(e)}")
