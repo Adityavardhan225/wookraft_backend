@@ -17,14 +17,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     ca-certificates \
     curl \
-    wget \
-    gnupg \
-    xfonts-base \
-    xfonts-75dpi \
- && wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb \
- && apt install -y ./wkhtmltox_0.12.6-1.focal_amd64.deb \
- && rm -f wkhtmltox_0.12.6-1.focal_amd64.deb \
- && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 
 
