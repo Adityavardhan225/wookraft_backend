@@ -21,10 +21,11 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     xfonts-base \
     xfonts-75dpi \
- && wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.bookworm_amd64.deb \
- && apt install -y ./wkhtmltox_0.12.6-1.bookworm_amd64.deb \
- && rm -f wkhtmltox_0.12.6-1.bookworm_amd64.deb \
+ && wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb \
+ && apt install -y ./wkhtmltox_0.12.6-1.focal_amd64.deb \
+ && rm -f wkhtmltox_0.12.6-1.focal_amd64.deb \
  && rm -rf /var/lib/apt/lists/*
+
 
 
 
