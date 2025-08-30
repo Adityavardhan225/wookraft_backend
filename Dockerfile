@@ -3,13 +3,29 @@ FROM python:3.10
 
 
 # Install system dependencies for SSL and pip
+# RUN apt-get update && apt-get install -y \
+#     gcc \
+#     libssl-dev \
+#     ca-certificates \
+#     curl \
+#     wkhtmltopdf \
+#     && rm -rf /var/lib/apt/lists/*
+
+
 RUN apt-get update && apt-get install -y \
     gcc \
     libssl-dev \
     ca-certificates \
     curl \
-    wkhtmltopdf \
-    && rm -rf /var/lib/apt/lists/*
+    wget \
+    gnupg \
+    xfonts-base \
+    xfonts-75dpi \
+ && wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.bionic_amd64.deb \
+ && apt install -y ./wkhtmltox_0.12.6-1.bionic_amd64.deb \
+ && rm -f wkhtmltox_0.12.6-1.bionic_amd64.deb \
+ && rm -rf /var/lib/apt/lists/*
+
 
     
 # Set environment variables to prevent Python from writing .pyc files and buffering stdout/stderr
